@@ -52,6 +52,9 @@
                 </a>
             </div>
         </nav>
+        <div class="mobile-sidebar-actions">
+            <button class="btn btn-primary nav-action-link" type="button" onclick="openCreateCourseModal()">➕ Add Course</button>
+        </div>
         <div class="sidebar-footer">
             <div class="user-card">
                 <div class="user-avatar" id="user-avatar">👤</div>
@@ -63,6 +66,7 @@
             </div>
         </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
     <div class="main-wrapper">
         <header class="main-header">
@@ -72,7 +76,7 @@
             </div>
             <div class="header-right">
                 <button class="dark-mode-toggle" id="dark-mode-toggle">🌙</button>
-                <button class="btn btn-primary btn-sm" onclick="UI.toggleModal('create-course-modal', true)">➕ Add Course</button>
+                <button class="btn btn-primary btn-sm" onclick="openCreateCourseModal()">➕ Add Course</button>
             </div>
         </header>
 
@@ -108,6 +112,7 @@
             </div>
         </main>
     </div>
+    <button class="floating-sidebar-toggle" type="button" aria-label="Open navigation menu" onclick="toggleSidebar()">☰</button>
 
     <div class="modal-overlay" id="create-course-modal">
         <div class="modal">
@@ -256,9 +261,42 @@
             }
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
+        function openCreateCourseModal() {
+            closeSidebar();
+            UI.toggleModal('create-course-modal', true);
         }
+
+        function setSidebarState(isOpen) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const shouldOverlay = window.innerWidth <= 1024;
+
+            sidebar.classList.toggle('open', shouldOverlay && isOpen);
+            backdrop.classList.toggle('open', shouldOverlay && isOpen);
+            document.body.classList.toggle('sidebar-open', shouldOverlay && isOpen);
+        }
+
+        function toggleSidebar(forceState = null) {
+            const shouldOpen = forceState === null
+                ? !document.getElementById('sidebar').classList.contains('open')
+                : forceState;
+            setSidebarState(shouldOpen);
+        }
+
+        function closeSidebar() {
+            setSidebarState(false);
+        }
+
+        window.addEventListener('resize', closeSidebar);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
     </script>
 </body>
 </html>

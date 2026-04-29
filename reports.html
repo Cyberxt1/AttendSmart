@@ -59,6 +59,11 @@
             </div>
         </nav>
 
+        <div class="mobile-sidebar-actions">
+            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportCSV()"><span>📥</span> Export CSV</button>
+            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportPDF()"><span>📄</span> Export PDF</button>
+        </div>
+
         <div class="sidebar-footer">
             <div class="user-card">
                 <div class="user-avatar" id="user-avatar">👤</div>
@@ -70,6 +75,7 @@
             </div>
         </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
     <div class="main-wrapper">
         <header class="main-header">
@@ -201,6 +207,7 @@
             </div>
         </main>
     </div>
+    <button class="floating-sidebar-toggle" type="button" aria-label="Open navigation menu" onclick="toggleSidebar()">☰</button>
 
     <div id="toast-container" class="toast-container"></div>
 
@@ -421,9 +428,37 @@
             ExportModule.toPDF('Attendance Report');
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
+        function setSidebarState(isOpen) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const shouldOverlay = window.innerWidth <= 1024;
+
+            sidebar.classList.toggle('open', shouldOverlay && isOpen);
+            backdrop.classList.toggle('open', shouldOverlay && isOpen);
+            document.body.classList.toggle('sidebar-open', shouldOverlay && isOpen);
         }
+
+        function toggleSidebar(forceState = null) {
+            const shouldOpen = forceState === null
+                ? !document.getElementById('sidebar').classList.contains('open')
+                : forceState;
+            setSidebarState(shouldOpen);
+        }
+
+        function closeSidebar() {
+            setSidebarState(false);
+        }
+
+        window.addEventListener('resize', closeSidebar);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
     </script>
 </body>
 </html>

@@ -59,6 +59,12 @@
             </div>
         </nav>
 
+        <div class="mobile-sidebar-actions">
+            <button class="btn btn-primary nav-action-link" type="button" onclick="openCreateSessionModal()">
+                <span>➕</span> New Session
+            </button>
+        </div>
+
         <div class="sidebar-footer">
             <div class="user-card">
                 <div class="user-avatar" id="user-avatar">👤</div>
@@ -70,6 +76,7 @@
             </div>
         </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
     <div class="main-wrapper">
         <header class="main-header">
@@ -81,7 +88,7 @@
             <div class="header-right">
                 <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
                 <div class="page-actions">
-                    <button class="btn btn-primary btn-sm" onclick="UI.toggleModal('create-session-modal', true)">
+                    <button class="btn btn-primary btn-sm" onclick="openCreateSessionModal()">
                         <span>➕</span> New Session
                     </button>
                 </div>
@@ -129,6 +136,7 @@
             </div>
         </main>
     </div>
+    <button class="floating-sidebar-toggle" type="button" aria-label="Open navigation menu" onclick="toggleSidebar()">☰</button>
 
     <div class="modal-overlay" id="create-session-modal">
         <div class="modal">
@@ -499,7 +507,7 @@
             }, function(error, canvas) {
                 if (error) {
                     console.error('QR Code error:', error);
-                    container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                    container.innerHTML = '<p style="color: red;">Unable to display the QR code right now. Please try again.</p>';
                     return;
                 }
 
@@ -640,8 +648,16 @@
             container.innerHTML = '';
 
             if (!window.QRCode || typeof QRCode.toCanvas !== 'function') {
-                container.innerHTML = '<p style="color: red;">QR generator unavailable</p>';
-                UI.toast('QR generator could not be loaded.', 'error');
+                const fallbackImage = document.createElement('img');
+                fallbackImage.alt = 'Session QR code';
+                fallbackImage.style.width = '100%';
+                fallbackImage.style.maxWidth = '250px';
+                fallbackImage.style.height = 'auto';
+                fallbackImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=2&data=${encodeURIComponent(payload)}`;
+                fallbackImage.onerror = () => {
+                    container.innerHTML = '<p style="color: red;">Unable to display the QR code right now. Please try again.</p>';
+                };
+                container.appendChild(fallbackImage);
                 return;
             }
 
@@ -656,7 +672,7 @@
             }, function(error, canvas) {
                 if (error) {
                     console.error('QR Code error:', error);
-                    container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                    container.innerHTML = '<p style="color: red;">Unable to display the QR code right now. Please try again.</p>';
                     return;
                 }
 
@@ -669,9 +685,42 @@
             });
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
+        function openCreateSessionModal() {
+            closeSidebar();
+            UI.toggleModal('create-session-modal', true);
         }
+
+        function setSidebarState(isOpen) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const shouldOverlay = window.innerWidth <= 1024;
+
+            sidebar.classList.toggle('open', shouldOverlay && isOpen);
+            backdrop.classList.toggle('open', shouldOverlay && isOpen);
+            document.body.classList.toggle('sidebar-open', shouldOverlay && isOpen);
+        }
+
+        function toggleSidebar(forceState = null) {
+            const shouldOpen = forceState === null
+                ? !document.getElementById('sidebar').classList.contains('open')
+                : forceState;
+            setSidebarState(shouldOpen);
+        }
+
+        function closeSidebar() {
+            setSidebarState(false);
+        }
+
+        window.addEventListener('resize', closeSidebar);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
 
         window.addEventListener('beforeunload', () => {
             CountdownTimer.stopAll();

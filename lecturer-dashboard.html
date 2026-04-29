@@ -61,9 +61,9 @@
         </nav>
 
         <div class="mobile-sidebar-actions">
-            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportCSV()"><span>ðŸ“¥</span> Export CSV</button>
-            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportPDF()"><span>ðŸ“„</span> Export PDF</button>
-            <button class="btn btn-primary nav-action-link" type="button" onclick="openCreateSessionModal()"><span>âž•</span> New Session</button>
+            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportCSV()"><span></span> Export CSV</button>
+            <button class="btn btn-secondary nav-action-link" type="button" onclick="exportPDF()"><span></span> Export PDF</button>
+            <button class="btn btn-primary nav-action-link" type="button" onclick="openCreateSessionModal()"><span></span> New Session</button>
         </div>
 
         <div class="sidebar-footer">
@@ -546,8 +546,16 @@
             container.innerHTML = '';
 
             if (!window.QRCode || typeof QRCode.toCanvas !== 'function') {
-                container.innerHTML = '<p style="color: red;">QR generator unavailable</p>';
-                UI.toast('QR generator could not be loaded.', 'error');
+                const fallbackImage = document.createElement('img');
+                fallbackImage.alt = 'Session QR code';
+                fallbackImage.style.width = '100%';
+                fallbackImage.style.maxWidth = '250px';
+                fallbackImage.style.height = 'auto';
+                fallbackImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=2&data=${encodeURIComponent(payload)}`;
+                fallbackImage.onerror = () => {
+                    container.innerHTML = '<p style="color: red;">Unable to display the QR code right now. Please try again.</p>';
+                };
+                container.appendChild(fallbackImage);
                 return;
             }
 
@@ -559,7 +567,7 @@
             }, function(error, canvas) {
                 if (error) {
                     console.error('QR Code error:', error);
-                    container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                    container.innerHTML = '<p style="color: red;">Unable to display the QR code right now. Please try again.</p>';
                     return;
                 }
                 if (canvas) {
