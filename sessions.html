@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sessions - Adeleke University QR Attendance System">
+    <title>Adeleke University | Sessions</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Sessions">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="sessions.html" class="nav-item active">
+                    <span class="nav-item-icon">📚</span>
+                    <span>Sessions</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <p class="nav-section-title">Management</p>
+                <a href="students.html" class="nav-item">
+                    <span class="nav-item-icon">👨‍🎓</span>
+                    <span>Students</span>
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <span class="nav-item-icon">📖</span>
+                    <span>Courses</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Lecturer</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">Lecture Sessions</h1>
+            </div>
+
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
+                <div class="page-actions">
+                    <button class="btn btn-primary btn-sm" onclick="UI.toggleModal('create-session-modal', true)">
+                        <span>➕</span> New Session
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="card" style="margin-bottom: var(--space-6);">
+                <div class="card-body" style="padding: var(--space-2);">
+                    <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                        <button class="btn btn-sm active" id="tab-active" onclick="switchTab('active')" style="background-color: var(--primary-color); color: white;">Active Sessions</button>
+                        <button class="btn btn-ghost btn-sm" id="tab-upcoming" onclick="switchTab('upcoming')">Upcoming</button>
+                        <button class="btn btn-ghost btn-sm" id="tab-completed" onclick="switchTab('completed')">Completed</button>
+                        <button class="btn btn-ghost btn-sm" id="tab-all" onclick="switchTab('all')">All Sessions</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap;">
+                <div class="search-bar" style="flex: 1; min-width: 250px;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="session-search" placeholder="Search sessions...">
+                </div>
+                <select class="form-select" style="width: auto;" id="course-filter">
+                    <option value="">All Courses</option>
+                </select>
+                <select class="form-select" style="width: auto;" id="date-filter">
+                    <option value="">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+
+            <div id="sessions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: var(--space-5);">
+                <div class="skeleton skeleton-card" style="height: 300px;"></div>
+                <div class="skeleton skeleton-card" style="height: 300px;"></div>
+                <div class="skeleton skeleton-card" style="height: 300px;"></div>
+            </div>
+
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-state-icon">📚</div>
+                <p>No sessions found</p>
+                <button class="btn btn-primary" onclick="UI.toggleModal('create-session-modal', true)" style="margin-top: var(--space-4);">Create New Session</button>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="create-session-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Session</h3>
+                <button class="modal-close" onclick="UI.toggleModal('create-session-modal', false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-session-form">
+                    <div class="form-group">
+                        <label class="form-label" for="course-title">Course Title</label>
+                        <input type="text" id="course-title" class="form-input" placeholder="e.g., Introduction to Computer Science" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="course-code">Course Code</label>
+                        <input type="text" id="course-code" class="form-input" placeholder="e.g., CSC101" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="venue">Venue</label>
+                        <input type="text" id="venue" class="form-input" placeholder="e.g., Lecture Hall A" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                        <div class="form-group">
+                            <label class="form-label" for="date">Date</label>
+                            <input type="date" id="date" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="time">Start Time</label>
+                            <input type="time" id="time" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="duration">Duration (minutes)</label>
+                        <input type="number" id="duration" class="form-input" value="120" min="30" max="300" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="expected-students">Expected Students</label>
+                        <input type="number" id="expected-students" class="form-input" placeholder="e.g., 150" min="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="UI.toggleModal('create-session-modal', false)">Cancel</button>
+                <button class="btn btn-primary" id="create-session-btn" onclick="createSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Session QR Code</h3>
+                <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-container">
+                    <div class="qr-code" id="qr-code-display"></div>
+                    <div class="qr-info">
+                        <h4 id="qr-course-title">Course Title</h4>
+                        <p id="qr-course-code" style="color: var(--text-muted); font-size: var(--text-sm);">CSC101</p>
+                        <p class="qr-timer" id="qr-timer">Refreshes in: 30s</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="downloadQR()">Download QR</button>
+                <button class="btn btn-danger" onclick="endSession()">End Session</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allSessions = [];
+        let filteredSessions = [];
+        let currentTab = 'active';
+        let currentQRSession = null;
+        let qrRefreshInterval = null;
+        let qrSettings = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth(['lecturer', 'admin']);
+            if (!user) return;
+            if (user.role === 'admin') {
+                window.location.href = Page.getDefaultRoute(user);
+                return;
+            }
+
+            Page.fillUserCard(user);
+            setDefaultDateTime();
+            await loadSessions();
+            initSearch();
+        });
+
+        function setDefaultDateTime() {
+            const now = new Date();
+            document.getElementById('date').value = now.toISOString().split('T')[0];
+            document.getElementById('time').value = now.toTimeString().slice(0, 5);
+        }
+
+        async function loadSessions() {
+            try {
+                allSessions = await API.sessions.list({ includeCompleted: true });
+                populateCourseFilter();
+                applyFilters();
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                UI.toast(UI.getErrorMessage(error, 'Failed to load sessions'), 'error', 6000);
+            }
+        }
+
+        function populateCourseFilter() {
+            const select = document.getElementById('course-filter');
+            const currentValue = select.value;
+            const courseCodes = [...new Set(allSessions.map(session => session.courseCode).filter(Boolean))].sort();
+
+            select.innerHTML = '<option value="">All Courses</option>' +
+                courseCodes.map(code => `<option value="${code}">${code}</option>`).join('');
+            select.value = currentValue;
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('session-search').value.toLowerCase();
+            const courseFilter = document.getElementById('course-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+
+            filteredSessions = allSessions.filter(session => {
+                if (currentTab !== 'all' && session.status !== currentTab) return false;
+
+                if (searchQuery) {
+                    const searchFields = [
+                        session.courseTitle.toLowerCase(),
+                        session.courseCode.toLowerCase(),
+                        session.venue.toLowerCase()
+                    ];
+                    if (!searchFields.some(field => field.includes(searchQuery))) return false;
+                }
+
+                if (courseFilter && session.courseCode !== courseFilter) return false;
+
+                if (dateFilter) {
+                    const sessionDate = new Date(session.startTime);
+                    const now = new Date();
+
+                    if (dateFilter === 'today' && sessionDate.toDateString() !== now.toDateString()) return false;
+                    if (dateFilter === 'week' && sessionDate < new Date(now - 7 * 24 * 60 * 60 * 1000)) return false;
+                    if (dateFilter === 'month' && sessionDate < new Date(now - 30 * 24 * 60 * 60 * 1000)) return false;
+                }
+
+                return true;
+            });
+
+            renderSessions();
+        }
+
+        function renderSessions() {
+            const container = document.getElementById('sessions-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            CountdownTimer.stopAll();
+
+            if (filteredSessions.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            container.innerHTML = filteredSessions.map(session => {
+                const isActive = session.status === 'active';
+                const isUpcoming = session.status === 'upcoming';
+                const attendanceRate = session.totalStudents > 0 ? Math.round((session.attendanceCount / session.totalStudents) * 100) : 0;
+
+                return `
+                    <div class="session-card">
+                        ${isActive ? `
+                        <div class="session-security-badge">
+                            <span>🔒</span> QR Status: Secure
+                        </div>
+                        ` : ''}
+
+                        <div class="session-card-header">
+                            <div class="session-info">
+                                <h4 class="session-title">${session.courseTitle}</h4>
+                                <div class="session-meta">
+                                    <span class="session-meta-item">📖 ${session.courseCode}</span>
+                                    <span class="session-meta-item">📍 ${session.venue}</span>
+                                    <span class="session-meta-item">📅 ${UI.formatDate(session.startTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${isActive ? `
+                        <div class="session-timer" id="timer-${session.id}">
+                            <span class="timer-label">Session Ends In:</span>
+                            <span class="timer-value">--:--:--</span>
+                        </div>
+                        ` : `
+                        <div class="session-timer">
+                            <span class="timer-label">${isUpcoming ? 'Starts:' : 'Ended:'}</span>
+                            <span class="timer-value">${UI.formatDateTime(isUpcoming ? session.startTime : session.endTime)}</span>
+                        </div>
+                        `}
+
+                        <div class="session-stats">
+                            <div class="session-stat">
+                                <p class="session-stat-value">${session.attendanceCount}</p>
+                                <p class="session-stat-label">Present</p>
+                            </div>
+                            <div class="session-stat">
+                                <p class="session-stat-value">${Math.max((session.totalStudents || 0) - session.attendanceCount, 0)}</p>
+                                <p class="session-stat-label">Absent</p>
+                            </div>
+                            <div class="session-stat">
+                                <p class="session-stat-value">${attendanceRate}%</p>
+                                <p class="session-stat-label">Rate</p>
+                            </div>
+                        </div>
+
+                        <div class="session-actions">
+                            ${isActive ? `
+                            <button class="btn btn-primary btn-sm" onclick="showQRCode('${session.id}')">
+                                <span>📱</span> Show QR
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="endSession('${session.id}')">
+                                <span>⏹️</span> End
+                            </button>
+                            ` : isUpcoming ? `
+                            <button class="btn btn-secondary btn-sm" onclick="showSessionSummary('${session.id}')">
+                                <span>👁️</span> Preview
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSession('${session.id}')">
+                                <span>🗑️</span> Remove
+                            </button>
+                            ` : `
+                            <button class="btn btn-secondary btn-sm" onclick="showSessionSummary('${session.id}')">
+                                <span>👁️</span> View Details
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="exportSession('${session.id}')">
+                                <span>📥</span> Export
+                            </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            filteredSessions
+                .filter(session => session.status === 'active')
+                .forEach(session => {
+                    const endTime = new Date(new Date(session.startTime).getTime() + session.duration * 60000);
+                    CountdownTimer.start(session.id, endTime);
+                });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            ['active', 'upcoming', 'completed', 'all'].forEach(value => {
+                const btn = document.getElementById(`tab-${value}`);
+                if (value === tab) {
+                    btn.classList.remove('btn-ghost');
+                    btn.style.backgroundColor = 'var(--primary-color)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.classList.add('btn-ghost');
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                }
+            });
+
+            applyFilters();
+        }
+
+        function initSearch() {
+            document.getElementById('session-search').addEventListener('input', applyFilters);
+            document.getElementById('course-filter').addEventListener('change', applyFilters);
+            document.getElementById('date-filter').addEventListener('change', applyFilters);
+        }
+
+        async function createSession() {
+            const form = document.getElementById('create-session-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const sessionData = {
+                courseTitle: document.getElementById('course-title').value,
+                courseCode: document.getElementById('course-code').value,
+                venue: document.getElementById('venue').value,
+                startTime: new Date(`${document.getElementById('date').value}T${document.getElementById('time').value}`).toISOString(),
+                duration: parseInt(document.getElementById('duration').value, 10),
+                totalStudents: parseInt(document.getElementById('expected-students').value, 10) || 0
+            };
+
+            const btn = document.getElementById('create-session-btn');
+            UI.setButtonLoading(btn, true, 'Creating...');
+
+            try {
+                const result = await API.sessions.create(sessionData);
+                if (result.success) {
+                    UI.toast(result.message, 'success');
+                    UI.toggleModal('create-session-modal', false);
+                    form.reset();
+                    setDefaultDateTime();
+                    await loadSessions();
+                } else {
+                    UI.toast(result.message, 'error');
+                }
+            } catch (error) {
+                UI.toast('Failed to create session', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function showQRCode(sessionId) {
+            const session = allSessions.find(item => item.id === sessionId);
+            if (!session) return;
+
+            currentQRSession = session;
+            document.getElementById('qr-course-title').textContent = session.courseTitle;
+            document.getElementById('qr-course-code').textContent = `${session.courseCode} • Manual code ${session.manualCode || '------'}`;
+            generateQRCode(session.qrPayload);
+            UI.toggleModal('qr-modal', true);
+
+            let timeLeft = Math.max(1, Math.ceil((new Date(session.qrExpiresAt).getTime() - Date.now()) / 1000));
+            document.getElementById('qr-timer').textContent = `Refreshes in: ${timeLeft}s`;
+
+            if (qrRefreshInterval) clearInterval(qrRefreshInterval);
+
+            qrRefreshInterval = setInterval(async () => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    const result = await API.sessions.refreshQR(sessionId);
+                    if (result.success) {
+                        currentQRSession = await API.sessions.getById(sessionId);
+                        generateQRCode(currentQRSession.qrPayload);
+                        timeLeft = Math.max(1, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000));
+                    }
+                }
+                document.getElementById('qr-timer').textContent = `Refreshes in: ${timeLeft}s`;
+            }, 1000);
+        }
+
+        function generateQRCode(payload) {
+            const container = document.getElementById('qr-code-display');
+            container.innerHTML = '';
+
+            QRCode.toCanvas(payload, {
+                width: 250,
+                height: 250,
+                margin: 2,
+                color: {
+                    dark: '#0f172a',
+                    light: '#ffffff'
+                }
+            }, function(error, canvas) {
+                if (error) {
+                    console.error('QR Code error:', error);
+                    container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                    return;
+                }
+
+                if (canvas) {
+                    canvas.style.width = '100%';
+                    canvas.style.maxWidth = '250px';
+                    canvas.style.height = 'auto';
+                    container.appendChild(canvas);
+                }
+            });
+        }
+
+        function closeQRModal() {
+            UI.toggleModal('qr-modal', false);
+            if (qrRefreshInterval) {
+                clearInterval(qrRefreshInterval);
+                qrRefreshInterval = null;
+            }
+            currentQRSession = null;
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qr-code-display canvas');
+            if (!canvas) return;
+
+            const link = document.createElement('a');
+            link.download = `qr-code-${currentQRSession?.courseCode || 'session'}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            UI.toast('QR code downloaded', 'success');
+        }
+
+        async function endSession(sessionId) {
+            const targetSessionId = sessionId || currentQRSession?.id;
+            if (!targetSessionId || !confirm('Are you sure you want to end this session?')) return;
+
+            try {
+                const result = await API.sessions.end(targetSessionId);
+                if (result.success) {
+                    UI.toast(result.message, 'success');
+                    closeQRModal();
+                    await loadSessions();
+                } else {
+                    UI.toast(result.message, 'error');
+                }
+            } catch (error) {
+                UI.toast('Failed to end session', 'error');
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to remove this session?')) return;
+
+            try {
+                const result = await API.sessions.remove(sessionId);
+                if (result.success) {
+                    UI.toast(result.message, 'success');
+                    await loadSessions();
+                } else {
+                    UI.toast(result.message, 'error');
+                }
+            } catch (error) {
+                UI.toast('Failed to remove session', 'error');
+            }
+        }
+
+        function showSessionSummary(sessionId) {
+            const session = allSessions.find(item => item.id === sessionId);
+            if (!session) return;
+
+            UI.toast(
+                `${session.courseCode} • ${session.status.toUpperCase()} • ${UI.formatDateTime(session.startTime)} • ${session.attendanceCount}/${session.totalStudents || 0} present`,
+                'info',
+                5000
+            );
+        }
+
+        function exportSession(sessionId) {
+            const session = allSessions.find(item => item.id === sessionId);
+            if (!session) return;
+
+            ExportModule.toCSV([{
+                'Course Code': session.courseCode,
+                'Course Title': session.courseTitle,
+                Venue: session.venue,
+                'Start Time': UI.formatDateTime(session.startTime),
+                Duration: `${session.duration} mins`,
+                'Expected Students': session.totalStudents,
+                'Attendance Count': session.attendanceCount,
+                'Attendance Rate': `${session.attendanceRate}%`,
+                Status: session.status,
+                'Manual Code': session.manualCode || ''
+            }], `${session.courseCode.toLowerCase()}-session-summary`);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        window.addEventListener('beforeunload', () => {
+            CountdownTimer.stopAll();
+            if (qrRefreshInterval) clearInterval(qrRefreshInterval);
+        });
+    </script>
+</body>
+</html>

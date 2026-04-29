@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adeleke University | Students</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Students">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="sessions.html" class="nav-item">
+                    <span class="nav-item-icon">📚</span>
+                    <span>Sessions</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <p class="nav-section-title">Management</p>
+                <a href="students.html" class="nav-item active">
+                    <span class="nav-item-icon">👨‍🎓</span>
+                    <span>Students</span>
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <span class="nav-item-icon">📖</span>
+                    <span>Courses</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Lecturer</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">Student Management</h1>
+            </div>
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle">🌙</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="stats-grid" style="margin-bottom: var(--space-6);">
+                <div class="stat-card">
+                    <div class="stat-icon blue">👨‍🎓</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="student-total">0</p>
+                        <p class="stat-label">Registered Students</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="strong-attendance">0</p>
+                        <p class="stat-label">Above 80% Attendance</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">📉</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="watchlist-count">0</p>
+                        <p class="stat-label">Needs Attention</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">All Students</h3>
+                    <div class="search-bar" style="width: 280px;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="student-search" placeholder="Search students...">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="students-table-container">
+                        <div class="skeleton skeleton-table"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/app.js"></script>
+    <script>
+        let allStudents = [];
+        let filteredStudents = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth(['lecturer', 'admin']);
+            if (!user) return;
+            if (user.role === 'admin') {
+                window.location.href = Page.getDefaultRoute(user);
+                return;
+            }
+
+            Page.fillUserCard(user);
+            bindSearch();
+            await loadStudents();
+        });
+
+        async function loadStudents() {
+            try {
+                allStudents = await API.users.listStudents();
+                filteredStudents = [...allStudents];
+                renderStats();
+                renderStudents();
+            } catch (error) {
+                console.error(error);
+                UI.toast(UI.getErrorMessage(error, 'Failed to load students'), 'error', 6000);
+            }
+        }
+
+        function renderStats() {
+            document.getElementById('student-total').textContent = UI.formatNumber(allStudents.length);
+            document.getElementById('strong-attendance').textContent = UI.formatNumber(allStudents.filter(student => student.attendanceRate >= 80).length);
+            document.getElementById('watchlist-count').textContent = UI.formatNumber(allStudents.filter(student => student.attendanceRate < 50).length);
+        }
+
+        function renderStudents() {
+            const container = document.getElementById('students-table-container');
+
+            if (!filteredStudents.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👨‍🎓</div><p>No students found</p></div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Matric No</th>
+                            <th>Level</th>
+                            <th>Department</th>
+                            <th>Courses</th>
+                            <th>Attendance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredStudents.map(student => `
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                                        <span>👤</span>
+                                        <div>
+                                            <p style="font-weight: 500;">${student.fullName || student.name || 'Student'}</p>
+                                            <p style="font-size: var(--text-xs); color: var(--text-muted);">${student.email || 'No email'}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${student.matricNo || '--'}</td>
+                                <td>${student.level ? `${student.level} Level` : '--'}</td>
+                                <td>${student.department || '--'}</td>
+                                <td>${UI.formatNumber(student.registeredCourseCount || 0)}</td>
+                                <td>
+                                    <p style="font-weight: 600;">${student.attendanceRate}%</p>
+                                    <p style="font-size: var(--text-xs); color: var(--text-muted);">${student.attendanceCount} marked sessions</p>
+                                </td>
+                                <td>
+                                    <span class="badge badge-${student.attendanceRate >= 80 ? 'success' : student.attendanceRate >= 50 ? 'warning' : 'error'}">
+                                        ${student.attendanceRate >= 80 ? 'Excellent' : student.attendanceRate >= 50 ? 'Average' : 'At Risk'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function bindSearch() {
+            document.getElementById('student-search').addEventListener('input', event => {
+                const query = event.target.value.trim().toLowerCase();
+                filteredStudents = query
+                    ? allStudents.filter(student => {
+                        const values = [
+                            student.fullName,
+                            student.name,
+                            student.email,
+                            student.matricNo,
+                            student.level,
+                            student.department
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return values.includes(query);
+                    })
+                    : [...allStudents];
+
+                renderStudents();
+            });
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

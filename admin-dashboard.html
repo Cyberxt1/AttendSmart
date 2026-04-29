@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Admin Dashboard - Adeleke University QR Attendance System">
+    <title>Adeleke University | Admin Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Admin Dashboard">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="admin-dashboard.html" class="nav-item active">
+                    <span class="nav-item-icon">🧭</span>
+                    <span>User Operations</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <p class="nav-section-title">Admin Focus</p>
+                <div class="nav-item" style="cursor: default; opacity: 0.82;">
+                    <span class="nav-item-icon">🛡️</span>
+                    <span>Provision accounts</span>
+                </div>
+                <div class="nav-item" style="cursor: default; opacity: 0.82;">
+                    <span class="nav-item-icon">🔐</span>
+                    <span>Suspend risky access</span>
+                </div>
+                <div class="nav-item" style="cursor: default; opacity: 0.82;">
+                    <span class="nav-item-icon">🗂️</span>
+                    <span>Archive old records</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Admin</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">User Administration</h1>
+            </div>
+
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
+                <div class="page-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openCreateModal('student')"><span>🎓</span> New Student</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openCreateModal('lecturer')"><span>👩‍🏫</span> New Lecturer</button>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateModal('admin')"><span>🛡️</span> New Admin</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="stats-grid" id="stats-grid">
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-column" style="min-width: 0;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Account Directory</h3>
+                                <p class="card-subtitle">Create, update, suspend, and archive user accounts from one place.</p>
+                            </div>
+                        </div>
+                        <div class="card-body" style="display: grid; gap: var(--space-4);">
+                            <div style="display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(2, minmax(140px, 0.8fr)); gap: var(--space-3);">
+                                <div class="search-bar" style="width: 100%;">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" class="search-input" id="user-search" placeholder="Search by name, email, or matric number">
+                                </div>
+                                <select class="form-select" id="role-filter">
+                                    <option value="">All Roles</option>
+                                    <option value="student">Students</option>
+                                    <option value="lecturer">Lecturers</option>
+                                    <option value="admin">Admins</option>
+                                </select>
+                                <select class="form-select" id="status-filter">
+                                    <option value="">All Statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="disabled">Disabled</option>
+                                    <option value="archived">Archived</option>
+                                </select>
+                            </div>
+
+                            <div class="table-responsive" id="users-table-container">
+                                <div class="skeleton skeleton-table"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-column">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Operational Standards</h3>
+                                <p class="card-subtitle">Live policy values from system settings.</p>
+                            </div>
+                        </div>
+                        <div class="card-body" id="policy-card">
+                            <div class="skeleton skeleton-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Professional Features</h3>
+                        </div>
+                        <div class="card-body" style="display: grid; gap: var(--space-3);">
+                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                                <p style="font-weight: 600;">Controlled Provisioning</p>
+                                <p style="color: var(--text-muted); margin-top: var(--space-2);">Create lecturer and student accounts without kicking the current admin out of session.</p>
+                            </div>
+                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                                <p style="font-weight: 600;">Access Suspension</p>
+                                <p style="color: var(--text-muted); margin-top: var(--space-2);">Disable accounts immediately when there is a credential, policy, or conduct issue.</p>
+                            </div>
+                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                                <p style="font-weight: 600;">Archive-Safe Deletion</p>
+                                <p style="color: var(--text-muted); margin-top: var(--space-2);">Archive old accounts while blocking future login and removing stale registration links.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="create-user-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="create-user-title">Create User</h3>
+                <button class="modal-close" onclick="UI.toggleModal('create-user-modal', false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-user-form" style="display: grid; gap: var(--space-4);">
+                    <div class="form-group">
+                        <label class="form-label" for="create-role">Role</label>
+                        <select id="create-role" class="form-select" required onchange="toggleUserFields('create')">
+                            <option value="student">Student</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="create-full-name">Full Name</label>
+                        <input type="text" id="create-full-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="create-email">Email</label>
+                        <input type="email" id="create-email" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="create-password">Temporary Password</label>
+                        <input type="password" id="create-password" class="form-input" minlength="8" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="create-department">Department</label>
+                        <input type="text" id="create-department" class="form-input" placeholder="e.g. Computer Science">
+                    </div>
+                    <div class="form-group create-student-only">
+                        <label class="form-label" for="create-matric">Matric Number</label>
+                        <input type="text" id="create-matric" class="form-input" placeholder="e.g. 24/0123">
+                    </div>
+                    <div class="form-group create-student-only">
+                        <label class="form-label" for="create-level">Level</label>
+                        <select id="create-level" class="form-select">
+                            <option value="">Select Level</option>
+                            <option value="100">100 Level</option>
+                            <option value="200">200 Level</option>
+                            <option value="300">300 Level</option>
+                            <option value="400">400 Level</option>
+                            <option value="500">500 Level</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="UI.toggleModal('create-user-modal', false)">Cancel</button>
+                <button class="btn btn-primary" id="create-user-btn" onclick="submitCreateUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-user-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit User</h3>
+                <button class="modal-close" onclick="UI.toggleModal('edit-user-modal', false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-user-form" style="display: grid; gap: var(--space-4);">
+                    <input type="hidden" id="edit-user-id">
+                    <div class="form-group">
+                        <label class="form-label" for="edit-role">Role</label>
+                        <select id="edit-role" class="form-select" required onchange="toggleUserFields('edit')">
+                            <option value="student">Student</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-full-name">Full Name</label>
+                        <input type="text" id="edit-full-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-email">Email</label>
+                        <input type="email" id="edit-email" class="form-input" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-department">Department</label>
+                        <input type="text" id="edit-department" class="form-input">
+                    </div>
+                    <div class="form-group edit-student-only">
+                        <label class="form-label" for="edit-matric">Matric Number</label>
+                        <input type="text" id="edit-matric" class="form-input">
+                    </div>
+                    <div class="form-group edit-student-only">
+                        <label class="form-label" for="edit-level">Level</label>
+                        <select id="edit-level" class="form-select">
+                            <option value="">Select Level</option>
+                            <option value="100">100 Level</option>
+                            <option value="200">200 Level</option>
+                            <option value="300">300 Level</option>
+                            <option value="400">400 Level</option>
+                            <option value="500">500 Level</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="UI.toggleModal('edit-user-modal', false)">Cancel</button>
+                <button class="btn btn-primary" id="save-user-btn" onclick="submitEditUser()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allUsers = [];
+        let filteredUsers = [];
+        let systemSettings = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth(['admin']);
+            if (!user) return;
+
+            Page.fillUserCard(user);
+            toggleUserFields('create');
+            toggleUserFields('edit');
+            bindFilters();
+            await loadAdminData();
+        });
+
+        async function loadAdminData() {
+            try {
+                const [users, settings] = await Promise.all([
+                    API.users.listAll({ includeArchived: true }),
+                    API.settings.getSystemSettings()
+                ]);
+
+                allUsers = users.map(user => ({
+                    ...user,
+                    accountStatus: user.deletedAt ? 'archived' : (user.accountStatus || (user.disabled ? 'disabled' : 'active'))
+                }));
+                systemSettings = settings;
+                applyFilters();
+                renderStats();
+                renderPolicyCard();
+            } catch (error) {
+                console.error(error);
+                UI.toast(error.message || 'Failed to load admin data', 'error');
+            }
+        }
+
+        function renderStats() {
+            const activeUsers = allUsers.filter(user => user.accountStatus === 'active').length;
+            const lecturers = allUsers.filter(user => user.role === 'lecturer' && user.accountStatus !== 'archived').length;
+            const students = allUsers.filter(user => user.role === 'student' && user.accountStatus !== 'archived').length;
+            const flagged = allUsers.filter(user => user.accountStatus === 'disabled' || user.accountStatus === 'archived').length;
+
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon blue">👥</div>
+                    <div class="stat-content">
+                        <p class="stat-value">${UI.formatNumber(activeUsers)}</p>
+                        <p class="stat-label">Active Accounts</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">👩‍🏫</div>
+                    <div class="stat-content">
+                        <p class="stat-value">${UI.formatNumber(lecturers)}</p>
+                        <p class="stat-label">Lecturers</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">🎓</div>
+                    <div class="stat-content">
+                        <p class="stat-value">${UI.formatNumber(students)}</p>
+                        <p class="stat-label">Students</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🚨</div>
+                    <div class="stat-content">
+                        <p class="stat-value">${UI.formatNumber(flagged)}</p>
+                        <p class="stat-label">Disabled or Archived</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPolicyCard() {
+            const container = document.getElementById('policy-card');
+            container.innerHTML = `
+                <div style="display: grid; gap: var(--space-3);">
+                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                        <p style="font-weight: 600;">QR Rotation Window</p>
+                        <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.qrRefreshIntervalSeconds} seconds</p>
+                    </div>
+                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                        <p style="font-weight: 600;">Late Attendance Threshold</p>
+                        <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.lateThresholdMinutes} minutes after session start</p>
+                    </div>
+                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                        <p style="font-weight: 600;">Session Auto-Expiry</p>
+                        <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.sessionAutoExpiry ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('user-search').value.trim().toLowerCase();
+            const role = document.getElementById('role-filter').value;
+            const status = document.getElementById('status-filter').value;
+
+            filteredUsers = allUsers.filter(user => {
+                const accountStatus = user.accountStatus || 'active';
+                const haystack = [
+                    user.fullName,
+                    user.name,
+                    user.email,
+                    user.matricNo,
+                    user.department,
+                    user.level
+                ].filter(Boolean).join(' ').toLowerCase();
+
+                if (search && !haystack.includes(search)) return false;
+                if (role && user.role !== role) return false;
+                if (status && accountStatus !== status) return false;
+                return true;
+            });
+
+            renderUsers();
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('users-table-container');
+
+            if (!filteredUsers.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>No users match your filters</p></div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Profile</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredUsers.map(user => {
+                            const status = user.accountStatus || 'active';
+                            const badgeType = status === 'active' ? 'success' : status === 'disabled' ? 'warning' : 'error';
+                            const canModify = !user.isSuperAdmin || Auth.getCurrentUser()?.isSuperAdmin;
+
+                            return `
+                                <tr>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: var(--space-2);">
+                                            <span>${user.role === 'student' ? '🎓' : user.role === 'lecturer' ? '👩‍🏫' : '🛡️'}</span>
+                                            <div>
+                                                <p style="font-weight: 600;">${user.fullName || user.name || 'User'}</p>
+                                                <p style="font-size: var(--text-xs); color: var(--text-muted);">${user.email || '--'}</p>
+                                                ${user.matricNo ? `<p style="font-size: var(--text-xs); color: var(--text-muted);">${user.matricNo}</p>` : ''}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="text-transform: capitalize;">${user.role}</td>
+                                    <td>${user.department || '--'}</td>
+                                    <td><span class="badge badge-${badgeType}" style="text-transform: capitalize;">${status}</span></td>
+                                    <td>${user.role === 'student' ? `${user.level || '--'} Level` : 'Managed account'}</td>
+                                    <td>
+                                        <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                                            <button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="openEditModal('${user.uid}')">Edit</button>
+                                            ${status === 'active'
+                                                ? `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="changeAccountStatus('${user.uid}', 'disabled')">Suspend</button>`
+                                                : status === 'disabled'
+                                                    ? `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="changeAccountStatus('${user.uid}', 'active')">Reactivate</button>`
+                                                    : `<button class="btn btn-secondary btn-sm" disabled>Archived</button>`}
+                                            <button class="btn btn-danger btn-sm" ${canModify && !user.deletedAt ? '' : 'disabled'} onclick="archiveUser('${user.uid}')">Archive</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function bindFilters() {
+            document.getElementById('user-search').addEventListener('input', applyFilters);
+            document.getElementById('role-filter').addEventListener('change', applyFilters);
+            document.getElementById('status-filter').addEventListener('change', applyFilters);
+        }
+
+        function openCreateModal(role = 'student') {
+            document.getElementById('create-user-form').reset();
+            document.getElementById('create-role').value = role;
+            document.getElementById('create-user-title').textContent = `Create ${role.charAt(0).toUpperCase() + role.slice(1)} Account`;
+            toggleUserFields('create');
+            UI.toggleModal('create-user-modal', true);
+        }
+
+        function openEditModal(userId) {
+            const user = allUsers.find(item => item.uid === userId);
+            if (!user) return;
+
+            document.getElementById('edit-user-id').value = user.uid;
+            document.getElementById('edit-role').value = user.role || 'student';
+            document.getElementById('edit-full-name').value = user.fullName || user.name || '';
+            document.getElementById('edit-email').value = user.email || '';
+            document.getElementById('edit-department').value = user.department || user.departmentKey || '';
+            document.getElementById('edit-matric').value = user.matricNo || '';
+            document.getElementById('edit-level').value = user.level || '';
+            toggleUserFields('edit');
+            UI.toggleModal('edit-user-modal', true);
+        }
+
+        function toggleUserFields(prefix) {
+            const role = document.getElementById(`${prefix}-role`).value;
+            document.querySelectorAll(`.${prefix}-student-only`).forEach(element => {
+                element.style.display = role === 'student' ? '' : 'none';
+            });
+        }
+
+        async function submitCreateUser() {
+            const form = document.getElementById('create-user-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const btn = document.getElementById('create-user-btn');
+            UI.setButtonLoading(btn, true, 'Creating...');
+
+            try {
+                const result = await API.users.createManagedUser({
+                    role: document.getElementById('create-role').value,
+                    fullName: document.getElementById('create-full-name').value,
+                    email: document.getElementById('create-email').value,
+                    password: document.getElementById('create-password').value,
+                    department: document.getElementById('create-department').value,
+                    matricNo: document.getElementById('create-matric').value,
+                    level: document.getElementById('create-level').value
+                });
+
+                UI.toast(`${result.user.role} account created successfully`, 'success');
+                UI.toggleModal('create-user-modal', false);
+                await loadAdminData();
+            } catch (error) {
+                UI.toast(error.message || 'Failed to create user', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function submitEditUser() {
+            const userId = document.getElementById('edit-user-id').value;
+            const btn = document.getElementById('save-user-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                await API.users.updateManagedUser(userId, {
+                    role: document.getElementById('edit-role').value,
+                    fullName: document.getElementById('edit-full-name').value,
+                    department: document.getElementById('edit-department').value,
+                    matricNo: document.getElementById('edit-matric').value,
+                    level: document.getElementById('edit-level').value
+                });
+
+                UI.toast('User updated successfully', 'success');
+                UI.toggleModal('edit-user-modal', false);
+                await loadAdminData();
+            } catch (error) {
+                UI.toast(error.message || 'Failed to update user', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function changeAccountStatus(userId, status) {
+            const verb = status === 'disabled' ? 'suspend' : 'reactivate';
+            if (!confirm(`Are you sure you want to ${verb} this account?`)) return;
+
+            try {
+                await API.users.setAccountStatus(userId, status);
+                UI.toast(`Account ${status === 'disabled' ? 'suspended' : 'reactivated'} successfully`, 'success');
+                await loadAdminData();
+            } catch (error) {
+                UI.toast(error.message || 'Unable to change account status', 'error');
+            }
+        }
+
+        async function archiveUser(userId) {
+            if (!confirm('Archive this user? This will block sign-in and remove stale student registrations.')) return;
+
+            try {
+                await API.users.archiveUser(userId);
+                UI.toast('User archived successfully', 'success');
+                await loadAdminData();
+            } catch (error) {
+                UI.toast(error.message || 'Unable to archive user', 'error');
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

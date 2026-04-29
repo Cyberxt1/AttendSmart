@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adeleke University | Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Settings">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="sessions.html" class="nav-item">
+                    <span class="nav-item-icon">📚</span>
+                    <span>Sessions</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <p class="nav-section-title">Management</p>
+                <a href="students.html" class="nav-item">
+                    <span class="nav-item-icon">👨‍🎓</span>
+                    <span>Students</span>
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <span class="nav-item-icon">📖</span>
+                    <span>Courses</span>
+                </a>
+                <a href="settings.html" class="nav-item active">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Lecturer</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">System Settings</h1>
+            </div>
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle">🌙</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="dashboard-grid">
+                <div class="dashboard-column">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Profile Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-input" id="profile-name">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="profile-email">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-input" id="profile-dept">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Level</label>
+                                <select class="form-select" id="profile-level">
+                                    <option value="">Select Level</option>
+                                    <option value="100">100 Level</option>
+                                    <option value="200">200 Level</option>
+                                    <option value="300">300 Level</option>
+                                    <option value="400">400 Level</option>
+                                    <option value="500">500 Level</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveProfile()" id="save-profile-btn">Save Changes</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Security</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" class="form-input" id="current-password" placeholder="Enter current password">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <input type="password" class="form-input" id="new-password" placeholder="Enter new password">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-input" id="confirm-new-password" placeholder="Confirm new password">
+                            </div>
+                            <button class="btn btn-primary" onclick="changePassword()" id="change-password-btn">Change Password</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-column">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Attendance Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">QR Code Refresh Interval (seconds)</label>
+                                <input type="number" class="form-input" id="qr-refresh-interval" min="10" max="120">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Late Threshold (minutes)</label>
+                                <input type="number" class="form-input" id="late-threshold" min="5" max="60">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Session Auto-Expiry</label>
+                                <select class="form-select" id="session-auto-expiry">
+                                    <option value="enabled">Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveSettings()" id="save-settings-btn">Save Settings</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Notifications</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <label style="display: flex; align-items: center; gap: var(--space-3); cursor: pointer;">
+                                    <input type="checkbox" id="notify-attendance" style="width: 18px; height: 18px;">
+                                    <span>Email notifications for new attendance</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-3); cursor: pointer;">
+                                    <input type="checkbox" id="notify-expiry" style="width: 18px; height: 18px;">
+                                    <span>Session expiry alerts</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-3); cursor: pointer;">
+                                    <input type="checkbox" id="notify-summary" style="width: 18px; height: 18px;">
+                                    <span>Daily attendance summary</span>
+                                </label>
+                            </div>
+                            <button class="btn btn-primary" style="margin-top: var(--space-4);" onclick="saveNotifications()" id="save-notifications-btn">Save Preferences</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/app.js"></script>
+    <script>
+        let systemSettings = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth();
+            if (!user) return;
+
+            Page.fillUserCard(user);
+            fillProfile(user);
+            await loadSettings();
+        });
+
+        function fillProfile(user) {
+            document.getElementById('profile-name').value = user.fullName || user.name || '';
+            document.getElementById('profile-email').value = user.email || '';
+            document.getElementById('profile-dept').value = user.department || '';
+            document.getElementById('profile-level').value = user.level || '';
+        }
+
+        async function loadSettings() {
+            try {
+                systemSettings = await API.settings.getSystemSettings();
+                const notifications = Auth.getCurrentUser()?.preferences?.notifications || systemSettings.notifications || {};
+
+                document.getElementById('qr-refresh-interval').value = systemSettings.qrRefreshIntervalSeconds;
+                document.getElementById('late-threshold').value = systemSettings.lateThresholdMinutes;
+                document.getElementById('session-auto-expiry').value = systemSettings.sessionAutoExpiry ? 'enabled' : 'disabled';
+
+                document.getElementById('notify-attendance').checked = !!notifications.attendanceEmails;
+                document.getElementById('notify-expiry').checked = !!notifications.sessionExpiryAlerts;
+                document.getElementById('notify-summary').checked = !!notifications.dailySummary;
+            } catch (error) {
+                console.error(error);
+                UI.toast('Failed to load settings', 'error');
+            }
+        }
+
+        async function saveProfile() {
+            const btn = document.getElementById('save-profile-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                const updatedUser = await Auth.updateProfile({
+                    fullName: document.getElementById('profile-name').value,
+                    email: document.getElementById('profile-email').value,
+                    department: document.getElementById('profile-dept').value,
+                    level: document.getElementById('profile-level').value
+                });
+
+                Page.fillUserCard(updatedUser);
+                UI.toast('Profile updated successfully', 'success');
+            } catch (error) {
+                UI.toast(error.message || 'Unable to update profile', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+            if (!currentPassword || !newPassword) {
+                UI.toast('Enter your current and new password', 'warning');
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                UI.toast('New passwords do not match', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('change-password-btn');
+            UI.setButtonLoading(btn, true, 'Updating...');
+
+            try {
+                await Auth.changePassword(currentPassword, newPassword);
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-new-password').value = '';
+                UI.toast('Password changed successfully', 'success');
+            } catch (error) {
+                UI.toast(error.message || 'Unable to change password', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function saveSettings() {
+            const btn = document.getElementById('save-settings-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                await API.settings.saveSystemSettings({
+                    qrRefreshIntervalSeconds: parseInt(document.getElementById('qr-refresh-interval').value, 10) || 30,
+                    lateThresholdMinutes: parseInt(document.getElementById('late-threshold').value, 10) || 15,
+                    sessionAutoExpiry: document.getElementById('session-auto-expiry').value === 'enabled'
+                });
+
+                UI.toast('Settings saved successfully', 'success');
+            } catch (error) {
+                UI.toast(error.message || 'Unable to save settings', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        async function saveNotifications() {
+            const btn = document.getElementById('save-notifications-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                await API.settings.saveUserNotifications({
+                    attendanceEmails: document.getElementById('notify-attendance').checked,
+                    sessionExpiryAlerts: document.getElementById('notify-expiry').checked,
+                    dailySummary: document.getElementById('notify-summary').checked
+                });
+
+                UI.toast('Notification preferences saved', 'success');
+            } catch (error) {
+                UI.toast(error.message || 'Unable to save notifications', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

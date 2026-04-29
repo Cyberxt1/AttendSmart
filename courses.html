@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adeleke University | Courses</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Courses">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="sessions.html" class="nav-item">
+                    <span class="nav-item-icon">📚</span>
+                    <span>Sessions</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <p class="nav-section-title">Management</p>
+                <a href="students.html" class="nav-item">
+                    <span class="nav-item-icon">👨‍🎓</span>
+                    <span>Students</span>
+                </a>
+                <a href="courses.html" class="nav-item active">
+                    <span class="nav-item-icon">📖</span>
+                    <span>Courses</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Lecturer</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">Course Management</h1>
+            </div>
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle">🌙</button>
+                <button class="btn btn-primary btn-sm" onclick="UI.toggleModal('create-course-modal', true)">➕ Add Course</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="stats-grid" style="margin-bottom: var(--space-6);">
+                <div class="stat-card">
+                    <div class="stat-icon blue">📖</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="course-total">0</p>
+                        <p class="stat-label">Courses</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">📚</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="course-sessions">0</p>
+                        <p class="stat-label">Tracked Sessions</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">📈</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="avg-attendance">0%</p>
+                        <p class="stat-label">Average Attendance</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="courses-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-5);">
+                <div class="skeleton skeleton-card" style="height: 220px;"></div>
+                <div class="skeleton skeleton-card" style="height: 220px;"></div>
+                <div class="skeleton skeleton-card" style="height: 220px;"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="create-course-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Course</h3>
+                <button class="modal-close" onclick="UI.toggleModal('create-course-modal', false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-course-form">
+                    <div class="form-group">
+                        <label class="form-label" for="course-code">Course Code</label>
+                        <input type="text" id="course-code" class="form-input" placeholder="e.g. CSC401" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="course-title">Course Title</label>
+                        <input type="text" id="course-title" class="form-input" placeholder="e.g. Distributed Systems" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="course-lecturer">Lecturer Name</label>
+                        <input type="text" id="course-lecturer" class="form-input" placeholder="Defaults to current user">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="course-department">Department</label>
+                        <input type="text" id="course-department" class="form-input" placeholder="e.g. Computer Science">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="course-level">Level</label>
+                        <select id="course-level" class="form-select" required>
+                            <option value="">Select Level</option>
+                            <option value="100">100 Level</option>
+                            <option value="200">200 Level</option>
+                            <option value="300">300 Level</option>
+                            <option value="400">400 Level</option>
+                            <option value="500">500 Level</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="course-students">Expected Students</label>
+                        <input type="number" id="course-students" class="form-input" min="0" value="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="UI.toggleModal('create-course-modal', false)">Cancel</button>
+                <button class="btn btn-primary" id="create-course-btn" onclick="createCourse()">Save Course</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/app.js"></script>
+    <script>
+        let courses = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth(['lecturer', 'admin']);
+            if (!user) return;
+            if (user.role === 'admin') {
+                window.location.href = Page.getDefaultRoute(user);
+                return;
+            }
+
+            Page.fillUserCard(user);
+            await loadCourses();
+        });
+
+        async function loadCourses() {
+            try {
+                courses = await API.courses.list();
+                renderStats();
+                renderCourses();
+            } catch (error) {
+                console.error(error);
+                UI.toast(UI.getErrorMessage(error, 'Failed to load courses'), 'error', 6000);
+            }
+        }
+
+        function renderStats() {
+            const totalSessions = courses.reduce((sum, course) => sum + (course.sessionCount || 0), 0);
+            const average = courses.length
+                ? Math.round(courses.reduce((sum, course) => sum + (course.avgAttendance || 0), 0) / courses.length)
+                : 0;
+
+            document.getElementById('course-total').textContent = UI.formatNumber(courses.length);
+            document.getElementById('course-sessions').textContent = UI.formatNumber(totalSessions);
+            document.getElementById('avg-attendance').textContent = `${average}%`;
+        }
+
+        function renderCourses() {
+            const container = document.getElementById('courses-grid');
+
+            if (!courses.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📖</div><p>No courses available yet</p></div>';
+                return;
+            }
+
+            container.innerHTML = courses.map(course => `
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">${course.code}</h3>
+                        <span class="badge badge-${course.active ? 'success' : 'warning'}">${course.active ? 'Active' : 'Paused'}</span>
+                    </div>
+                    <div class="card-body">
+                        <h4>${course.title}</h4>
+                        <p style="color: var(--text-muted); font-size: var(--text-sm); margin-top: var(--space-2);">${course.lecturerName || 'Lecturer not set'}</p>
+                        <p style="color: var(--text-muted); font-size: var(--text-sm); margin-top: var(--space-1);">${course.department || 'Department not set'}</p>
+                        <p style="color: var(--text-muted); font-size: var(--text-sm); margin-top: var(--space-1);">${course.level ? `${course.level} Level` : 'Level not set'}</p>
+                        <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color);">
+                            <div><p style="font-weight: 600;">${UI.formatNumber(course.studentCount || 0)}</p><p style="font-size: var(--text-xs); color: var(--text-muted);">Students</p></div>
+                            <div><p style="font-weight: 600;">${UI.formatNumber(course.sessionCount || 0)}</p><p style="font-size: var(--text-xs); color: var(--text-muted);">Sessions</p></div>
+                            <div><p style="font-weight: 600;">${course.avgAttendance || 0}%</p><p style="font-size: var(--text-xs); color: var(--text-muted);">Avg Attendance</p></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createCourse() {
+            const form = document.getElementById('create-course-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const btn = document.getElementById('create-course-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                await API.courses.create({
+                    code: document.getElementById('course-code').value,
+                    title: document.getElementById('course-title').value,
+                    lecturerName: document.getElementById('course-lecturer').value,
+                    department: document.getElementById('course-department').value,
+                    level: document.getElementById('course-level').value,
+                    studentCount: parseInt(document.getElementById('course-students').value, 10) || 0
+                });
+
+                UI.toast('Course created successfully', 'success');
+                form.reset();
+                UI.toggleModal('create-course-modal', false);
+                await loadCourses();
+            } catch (error) {
+                UI.toast(error.message || 'Failed to create course', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

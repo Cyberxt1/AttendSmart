@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student Registration - Adeleke University QR Attendance Management System">
+    <title>Adeleke University | Student Registration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Student Registration">
+    <div class="login-page">
+        <div class="login-container" style="max-width: 420px;">
+            <div class="login-branding">
+                <h1 class="school-name">Adeleke University</h1>
+                <p class="school-subtitle">Student Attendance Portal</p>
+            </div>
+
+            <div class="login-card">
+                <div class="login-header">
+                    <h2 class="login-title">Create Student Account</h2>
+                    <p class="login-subtitle">Enter your matric number in the format 24/0123</p>
+                </div>
+
+                <form class="login-form" id="register-form">
+                    <div class="form-group">
+                        <label class="form-label" for="matricNo">Matric Number</label>
+                        <div class="input-group">
+                            <span class="input-icon">ID</span>
+                            <input type="text" id="matricNo" name="matricNo" class="form-input" placeholder="e.g. 24/0123" required autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-icon">📧</span>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <div class="input-group">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="password" name="password" class="form-input" placeholder="Create a password" required minlength="8" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword">Confirm Password</label>
+                        <div class="input-group">
+                            <span class="input-icon">🔐</span>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="Confirm your password" required autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full" id="register-btn">
+                        Create Account
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p class="login-footer-text">
+                        Already have an account?
+                        <a href="index.html" class="login-footer-link">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            await Page.redirectAuthenticatedUser();
+        });
+
+        document.getElementById("register-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (password !== confirmPassword) {
+                UI.toast("Passwords do not match", "error");
+                return;
+            }
+
+            const formData = {
+                matricNo: document.getElementById("matricNo").value,
+                email: document.getElementById("email").value,
+                password
+            };
+
+            const registerBtn = document.getElementById("register-btn");
+            UI.setButtonLoading(registerBtn, true, "Creating account...");
+
+            try {
+                const result = await Auth.register(formData, { mode: "student" });
+
+                if (result.success) {
+                    UI.toast(result.message, "success");
+                    setTimeout(() => {
+                        window.location.href = "index.html";
+                    }, 1500);
+                } else {
+                    UI.toast(result.message, "error");
+                    UI.setButtonLoading(registerBtn, false);
+                }
+            } catch (error) {
+                UI.toast(error.message || "An error occurred. Please try again.", "error");
+                UI.setButtonLoading(registerBtn, false);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student attendance dashboard and QR scanner">
+    <title>Adeleke University | Student Attendance</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/scanner.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Student Attendance">
+    <div id="student-profile-overlay" class="hidden" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); z-index: 1000; padding: 20px; overflow-y: auto;">
+        <div style="max-width: 460px; margin: 40px auto; background: var(--bg-primary); border-radius: var(--radius-2xl); box-shadow: var(--shadow-xl); padding: var(--space-8); border: 1px solid var(--border-color);">
+            <div style="margin-bottom: var(--space-6);">
+                <p style="font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;">Complete Profile</p>
+                <h2 style="font-size: var(--text-2xl); margin-top: var(--space-2);">Finish your student profile</h2>
+                <p style="color: var(--text-secondary); margin-top: var(--space-2);">Enter your student details once to unlock attendance scanning.</p>
+            </div>
+
+            <form id="student-profile-form">
+                <div class="form-group">
+                    <label class="form-label" for="student-full-name">Full Name</label>
+                    <div class="input-group">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="student-full-name" class="form-input" placeholder="Enter your full name" required autocomplete="name">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="student-matric">Matriculation Number</label>
+                    <div class="input-group">
+                        <span class="input-icon">🎓</span>
+                        <input type="text" id="student-matric" class="form-input" placeholder="e.g. 24/1024" required>
+                    </div>
+                    <p class="form-hint">Format: YY/NNNN. Entries older than 5 years are not allowed.</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="student-department">Department</label>
+                    <select id="student-department" class="form-select" required>
+                        <option value="">Select Department</option>
+                        <option value="computer-science">Computer Science</option>
+                        <option value="mathematics">Mathematics</option>
+                        <option value="physics">Physics</option>
+                        <option value="chemistry">Chemistry</option>
+                        <option value="biology">Biology</option>
+                        <option value="accounting">Accounting</option>
+                        <option value="business-admin">Business Administration</option>
+                        <option value="economics">Economics</option>
+                        <option value="law">Law</option>
+                        <option value="medicine">Medicine</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="student-level">Level</label>
+                    <select id="student-level" class="form-select" required>
+                        <option value="">Select Level</option>
+                        <option value="100">100 Level</option>
+                        <option value="200">200 Level</option>
+                        <option value="300">300 Level</option>
+                        <option value="400">400 Level</option>
+                        <option value="500">500 Level</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full" id="student-profile-btn">Save and Continue</button>
+            </form>
+        </div>
+    </div>
+
+    <header class="scanner-header">
+        <div class="scanner-header-content">
+            <div class="scanner-branding">
+                <p class="scanner-eyebrow">Student Portal</p>
+                <h1 class="school-name">AttendQR</h1>
+                <p class="scanner-subtitle">Track your lecture attendance and scan into class</p>
+            </div>
+            <div class="scanner-header-actions">
+                <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
+                <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="scanner-main">
+        <section class="student-hero">
+            <div>
+                <p class="student-welcome" id="student-welcome">Welcome back</p>
+                <h2 class="student-name" id="student-name">Student</h2>
+                <p class="student-meta" id="student-meta">Matric No. --</p>
+            </div>
+            <div class="student-hero-actions">
+                <button class="btn btn-primary btn-lg" id="toggle-attend-btn" onclick="toggleScanner(true)">Attend Lecture</button>
+                <button class="btn btn-secondary btn-lg" onclick="toggleManualEntry()">Enter Code</button>
+            </div>
+        </section>
+
+        <section class="student-stats-grid">
+            <article class="student-stat-card">
+                <p class="student-stat-label">Attendance Rate</p>
+                <p class="student-stat-value" id="attendance-rate">0%</p>
+                <span class="student-stat-note">Based on your recorded scans</span>
+            </article>
+            <article class="student-stat-card">
+                <p class="student-stat-label">Classes Attended</p>
+                <p class="student-stat-value" id="classes-attended">0</p>
+                <span class="student-stat-note">All-time successful check-ins</span>
+            </article>
+            <article class="student-stat-card">
+                <p class="student-stat-label">Late Arrivals</p>
+                <p class="student-stat-value" id="late-count">0</p>
+                <span class="student-stat-note">Marked after the grace window</span>
+            </article>
+            <article class="student-stat-card">
+                <p class="student-stat-label">Today</p>
+                <p class="student-stat-value" id="today-count">0</p>
+                <span class="student-stat-note">Attendance records from today</span>
+            </article>
+        </section>
+
+        <section class="student-panel" style="margin-bottom: var(--space-6);">
+            <div class="student-panel-header">
+                <div>
+                    <p class="student-panel-eyebrow">Course Registration</p>
+                    <h3 class="student-panel-title">Courses for your level</h3>
+                </div>
+            </div>
+            <div id="student-course-registration-list">
+                <p class="no-scans">Complete your profile to see courses for your level.</p>
+            </div>
+        </section>
+
+        <section class="student-dashboard-grid">
+            <div class="student-dashboard-column">
+                <article class="student-panel scanner-panel">
+                    <div class="student-panel-header">
+                        <div>
+                            <p class="student-panel-eyebrow">Scanner</p>
+                            <h3 class="student-panel-title">Scan classroom QR</h3>
+                        </div>
+                        <span class="scanner-status-badge" id="scanner-status-badge">Camera idle</span>
+                    </div>
+
+                    <div class="scanner-shell">
+                        <div class="scanner-container hidden" id="scanner-container">
+                            <div class="scanner-frame">
+                                <div class="scanner-corner scanner-corner-tl"></div>
+                                <div class="scanner-corner scanner-corner-tr"></div>
+                                <div class="scanner-corner scanner-corner-bl"></div>
+                                <div class="scanner-corner scanner-corner-br"></div>
+                                <div class="scanner-line"></div>
+                            </div>
+                            <div id="qr-reader"></div>
+                        </div>
+
+                        <div class="scanner-empty-state" id="scanner-empty-state">
+                            <div class="instruction-icon">📷</div>
+                            <h3>Ready when you are</h3>
+                            <p>Tap <strong>Attend Lecture</strong> to open your camera, then point it at the lecturer's live QR code.</p>
+                        </div>
+                    </div>
+
+                    <div class="scanner-toolbar">
+                        <button class="btn btn-primary" id="toolbar-attend-btn" onclick="toggleScanner(true)">Start Camera</button>
+                        <button class="btn btn-ghost hidden" id="toolbar-stop-btn" onclick="toggleScanner(false)">Stop Camera</button>
+                    </div>
+                </article>
+
+                <article class="student-panel hidden" id="scan-result-panel">
+                    <div class="scan-result" id="scan-result">
+                        <div class="result-icon" id="result-icon">✓</div>
+                        <h3 id="result-title">Attendance Marked</h3>
+                        <p id="result-message">Your attendance has been recorded successfully.</p>
+                        <div class="result-details" id="result-details">
+                            <p><strong>Course:</strong> <span id="result-course">CSC101</span></p>
+                            <p><strong>Time:</strong> <span id="result-time">10:30 AM</span></p>
+                            <p><strong>Status:</strong> <span id="result-status">Present</span></p>
+                        </div>
+                        <button class="btn btn-primary" onclick="resetScanner()">Attend Another Class</button>
+                    </div>
+                </article>
+
+                <article class="student-panel hidden" id="manual-entry-panel">
+                    <div class="student-panel-header">
+                        <div>
+                            <p class="student-panel-eyebrow">Manual Entry</p>
+                            <h3 class="student-panel-title">Enter lecturer code</h3>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="form-group">
+                            <label class="form-label" for="manual-code">Session Code</label>
+                            <input type="text" id="manual-code" class="form-input" placeholder="Enter the 6-digit code" maxlength="10">
+                        </div>
+                        <div class="manual-entry-actions">
+                            <button class="btn btn-primary" onclick="submitManualCode()">Submit Attendance</button>
+                            <button class="btn btn-ghost" onclick="toggleManualEntry(false)">Cancel</button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="student-dashboard-column">
+                <article class="student-panel">
+                    <div class="student-panel-header">
+                        <div>
+                            <p class="student-panel-eyebrow">Recent Activity</p>
+                            <h3 class="student-panel-title">Your attendance history</h3>
+                        </div>
+                    </div>
+                    <div class="history-list" id="history-list">
+                        <p class="no-scans">No attendance records yet</p>
+                    </div>
+                </article>
+
+                <article class="student-panel">
+                    <div class="student-panel-header">
+                        <div>
+                            <p class="student-panel-eyebrow">Today</p>
+                            <h3 class="student-panel-title">Today's scans</h3>
+                        </div>
+                    </div>
+                    <div class="scans-list" id="scans-list">
+                        <p class="no-scans">No scans yet today</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let html5QrCode = null;
+        let scannerActive = false;
+        let selectedCameraId = null;
+        let recentScans = [];
+        let attendanceHistory = [];
+        let availableCourses = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth();
+            if (!user) return;
+
+            if (!Auth.hasRole('student')) {
+                window.location.href = Page.getDefaultRoute(user);
+                return;
+            }
+
+            populateStudentProfile(user);
+            initializeStudentProfileGate(user);
+            loadRecentScans();
+            await loadAvailableCourses();
+            await loadAttendanceHistory();
+            updateScannerUi();
+        });
+
+        function initializeStudentProfileGate(user) {
+            const overlay = document.getElementById('student-profile-overlay');
+            const matricInput = document.getElementById('student-matric');
+
+            matricInput.addEventListener('input', () => {
+                const cleaned = matricInput.value.replace(/[^\d/]/g, '').slice(0, 7);
+                matricInput.value = cleaned;
+            });
+
+            if (!Auth.needsStudentProfileCompletion(user)) {
+                overlay.classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('student-full-name').value = user.fullName || user.name || '';
+            document.getElementById('student-matric').value = user.matricNo || '';
+            document.getElementById('student-department').value = user.departmentKey || '';
+            document.getElementById('student-level').value = user.level || '';
+            overlay.classList.remove('hidden');
+        }
+
+        function populateStudentProfile(user) {
+            document.getElementById('student-welcome').textContent = `Welcome back, ${user.department || 'student'}${user.level ? ` • ${user.level} Level` : ''}`;
+            document.getElementById('student-name').textContent = user.fullName || user.name || 'Student';
+            document.getElementById('student-meta').textContent = `${user.matricNo || 'No matric number'} • ${user.email || ''}`;
+        }
+
+        async function loadAvailableCourses() {
+            const container = document.getElementById('student-course-registration-list');
+
+            if (Auth.needsStudentProfileCompletion()) {
+                container.innerHTML = '<p class="no-scans">Complete your profile to see courses for your level.</p>';
+                return;
+            }
+
+            try {
+                availableCourses = await API.courses.listForStudent();
+                renderAvailableCourses();
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<p class="no-scans">${error.message || 'Unable to load courses right now.'}</p>`;
+            }
+        }
+
+        function renderAvailableCourses() {
+            const container = document.getElementById('student-course-registration-list');
+
+            if (!availableCourses.length) {
+                container.innerHTML = '<p class="no-scans">No courses available for your level yet.</p>';
+                return;
+            }
+
+            container.innerHTML = availableCourses.map(course => `
+                <div class="history-item">
+                    <div class="history-copy">
+                        <p class="history-course">${course.code}</p>
+                        <p class="history-title">${course.title}</p>
+                        <p class="history-meta">${course.department || 'No department'} â€¢ ${course.level || '--'} Level â€¢ ${course.lecturerName || 'Lecturer not set'}</p>
+                    </div>
+                    ${course.registered
+                        ? '<span class="badge badge-success">Registered</span>'
+                        : `<button class="btn btn-primary btn-sm" onclick="registerCourse('${course.id}')">Register Course</button>`}
+                </div>
+            `).join('');
+        }
+
+        async function loadAttendanceHistory() {
+            try {
+                attendanceHistory = await API.reports.getAttendanceRecords({ limit: 100 });
+                renderHistory();
+                renderStats();
+            } catch (error) {
+                console.error(error);
+                UI.toast(error.message || 'Unable to load your attendance history', 'error', 6000);
+            }
+        }
+
+        function renderStats() {
+            const total = attendanceHistory.length;
+            const present = attendanceHistory.filter(item => item.status === 'present').length;
+            const late = attendanceHistory.filter(item => item.status === 'late').length;
+            const today = attendanceHistory.filter(item => Utils.isSameDay(item.timestamp)).length;
+            const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+            document.getElementById('attendance-rate').textContent = `${rate}%`;
+            document.getElementById('classes-attended').textContent = UI.formatNumber(total);
+            document.getElementById('late-count').textContent = UI.formatNumber(late);
+            document.getElementById('today-count').textContent = UI.formatNumber(today);
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+
+            if (!attendanceHistory.length) {
+                container.innerHTML = '<p class="no-scans">No attendance records yet</p>';
+                return;
+            }
+
+            container.innerHTML = attendanceHistory.slice(0, 8).map(record => `
+                <div class="history-item">
+                    <div class="history-copy">
+                        <p class="history-course">${record.courseCode}</p>
+                        <p class="history-title">${record.courseTitle}</p>
+                        <p class="history-meta">${UI.formatDate(record.timestamp)} • ${UI.formatTime(record.timestamp)}</p>
+                    </div>
+                    <span class="badge badge-${record.status === 'present' ? 'success' : 'warning'}">
+                        ${record.status === 'present' ? 'Present' : 'Late'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function toggleScanner(shouldStart) {
+            if (shouldStart) {
+                await startScanner();
+                return;
+            }
+
+            await stopScanner();
+        }
+
+        async function startScanner() {
+            if (Auth.needsStudentProfileCompletion()) {
+                UI.toast('Complete your profile first to use attendance features.', 'warning');
+                return;
+            }
+
+            if (scannerActive) return;
+
+            try {
+                const devices = await Html5Qrcode.getCameras();
+                if (!devices || devices.length === 0) {
+                    showNoCameraError();
+                    return;
+                }
+
+                const backCamera = devices.find(device => device.label.toLowerCase().includes('back'));
+                selectedCameraId = backCamera ? backCamera.id : devices[0].id;
+
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode('qr-reader');
+                }
+
+                await html5QrCode.start(
+                    selectedCameraId,
+                    {
+                        fps: 10,
+                        qrbox: { width: 240, height: 240 },
+                        aspectRatio: 1
+                    },
+                    onScanSuccess,
+                    onScanFailure
+                );
+
+                scannerActive = true;
+                updateScannerUi();
+            } catch (error) {
+                console.error('Scanner initialization error:', error);
+                showNoCameraError();
+            }
+        }
+
+        async function stopScanner() {
+            if (!html5QrCode || !scannerActive) {
+                scannerActive = false;
+                updateScannerUi();
+                return;
+            }
+
+            try {
+                await html5QrCode.stop();
+            } catch (error) {
+                console.warn('Scanner stop error:', error);
+            }
+
+            scannerActive = false;
+            updateScannerUi();
+        }
+
+        function updateScannerUi() {
+            const profileLocked = Auth.needsStudentProfileCompletion();
+            document.getElementById('scanner-container').classList.toggle('hidden', !scannerActive);
+            document.getElementById('scanner-empty-state').classList.toggle('hidden', scannerActive);
+            document.getElementById('toolbar-stop-btn').classList.toggle('hidden', !scannerActive);
+            document.getElementById('toggle-attend-btn').textContent = scannerActive ? 'Camera Active' : 'Attend Lecture';
+            document.getElementById('toolbar-attend-btn').textContent = scannerActive ? 'Scanning...' : 'Start Camera';
+            document.getElementById('scanner-status-badge').textContent = scannerActive ? 'Camera live' : 'Camera idle';
+            document.getElementById('toggle-attend-btn').disabled = scannerActive || profileLocked;
+            document.getElementById('toolbar-attend-btn').disabled = scannerActive || profileLocked;
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (!scannerActive) return;
+
+            await stopScanner();
+            await processAttendance(decodedText);
+        }
+
+        function onScanFailure() {}
+
+        async function processAttendance(qrToken) {
+            try {
+                UI.toast('Processing attendance...', 'info');
+
+                const result = await API.attendance.mark({ qrToken });
+                addRecentScan({
+                    course: result.attendance.courseCode,
+                    courseTitle: result.attendance.courseTitle,
+                    time: new Date(),
+                    status: result.attendance.status,
+                    token: qrToken
+                });
+
+                await loadAttendanceHistory();
+                showScanResult('success', 'Attendance Marked', result.message, {
+                    course: result.attendance.courseCode,
+                    time: UI.formatTime(new Date()),
+                    status: result.attendance.status
+                });
+            } catch (error) {
+                console.error('Attendance processing error:', error);
+                showScanResult('error', 'Attendance Failed', error.message || 'Failed to process attendance. Please try again.');
+            }
+        }
+
+        function showScanResult(type, title, message, details = null) {
+            document.getElementById('scan-result-panel').classList.remove('hidden');
+            document.getElementById('manual-entry-panel').classList.add('hidden');
+
+            const iconEl = document.getElementById('result-icon');
+            const titleEl = document.getElementById('result-title');
+            const messageEl = document.getElementById('result-message');
+            const detailsEl = document.getElementById('result-details');
+
+            iconEl.textContent = type === 'success' ? '✓' : '×';
+            iconEl.className = `result-icon ${type === 'success' ? 'success' : 'error'}`;
+            titleEl.className = type === 'success' ? 'success' : 'error';
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            if (details) {
+                detailsEl.classList.remove('hidden');
+                document.getElementById('result-course').textContent = details.course;
+                document.getElementById('result-time').textContent = details.time;
+                document.getElementById('result-status').textContent = details.status === 'present' ? 'Present' : 'Late';
+                document.getElementById('result-status').className = details.status === 'present' ? 'badge badge-success' : 'badge badge-warning';
+            } else {
+                detailsEl.classList.add('hidden');
+            }
+        }
+
+        function resetScanner() {
+            document.getElementById('scan-result-panel').classList.add('hidden');
+            updateScannerUi();
+        }
+
+        function toggleManualEntry(forceShow = null) {
+            if (Auth.needsStudentProfileCompletion()) {
+                UI.toast('Complete your profile first to use attendance features.', 'warning');
+                return;
+            }
+
+            const panel = document.getElementById('manual-entry-panel');
+            const shouldShow = forceShow === null ? panel.classList.contains('hidden') : forceShow;
+            panel.classList.toggle('hidden', !shouldShow);
+        }
+
+        async function submitManualCode() {
+            const code = document.getElementById('manual-code').value.trim();
+            if (!code) {
+                UI.toast('Please enter a session code', 'warning');
+                return;
+            }
+
+            await processAttendance(`manual_${code}`);
+            document.getElementById('manual-code').value = '';
+            toggleManualEntry(false);
+        }
+
+        async function registerCourse(courseId) {
+            try {
+                const result = await API.courses.registerStudent(courseId);
+                UI.toast(result.message, 'success');
+                await loadAvailableCourses();
+            } catch (error) {
+                UI.toast(error.message || 'Unable to register course', 'error');
+            }
+        }
+
+        function showNoCameraError() {
+            scannerActive = false;
+            updateScannerUi();
+            document.getElementById('scanner-empty-state').innerHTML = `
+                <div class="instruction-icon">⚠️</div>
+                <h3>Camera Not Available</h3>
+                <p>Unable to access your camera right now. You can still use the manual session code.</p>
+            `;
+        }
+
+        function addRecentScan(scan) {
+            scan.id = Date.now();
+            recentScans.unshift(scan);
+            if (recentScans.length > 10) {
+                recentScans = recentScans.slice(0, 10);
+            }
+            DataStore.saveRecentScans(recentScans);
+            renderRecentScans();
+        }
+
+        function loadRecentScans() {
+            recentScans = DataStore.getRecentScans();
+            renderRecentScans();
+        }
+
+        function renderRecentScans() {
+            const container = document.getElementById('scans-list');
+            const today = new Date().toDateString();
+            const todayScans = recentScans.filter(scan => new Date(scan.time).toDateString() === today);
+
+            if (!todayScans.length) {
+                container.innerHTML = '<p class="no-scans">No scans yet today</p>';
+                return;
+            }
+
+            container.innerHTML = todayScans.map(scan => `
+                <div class="scan-item">
+                    <div class="scan-info">
+                        <p class="scan-course">${scan.course}</p>
+                        <p class="scan-time">${UI.formatTime(scan.time)}</p>
+                    </div>
+                    <span class="badge badge-${scan.status === 'present' ? 'success' : 'warning'}">
+                        ${scan.status === 'present' ? 'Present' : 'Late'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        window.addEventListener('beforeunload', async () => {
+            if (html5QrCode && scannerActive) {
+                try {
+                    await html5QrCode.stop();
+                } catch (error) {
+                    // ignore cleanup errors
+                }
+            }
+        });
+
+        document.getElementById('student-profile-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('student-profile-btn');
+            UI.setButtonLoading(btn, true, 'Saving...');
+
+            try {
+                const updatedUser = await Auth.completeStudentProfile({
+                    fullName: document.getElementById('student-full-name').value,
+                    matricNo: document.getElementById('student-matric').value,
+                    department: document.getElementById('student-department').value,
+                    level: document.getElementById('student-level').value
+                });
+
+                populateStudentProfile(updatedUser);
+                document.getElementById('student-profile-overlay').classList.add('hidden');
+                await loadAvailableCourses();
+                await loadAttendanceHistory();
+                updateScannerUi();
+                UI.toast('Profile completed successfully', 'success');
+            } catch (error) {
+                UI.toast(error.message || 'Unable to save profile', 'error');
+            } finally {
+                UI.setButtonLoading(btn, false);
+            }
+        });
+    </script>
+</body>
+</html>

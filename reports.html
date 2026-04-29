@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Reports - Adeleke University QR Attendance System">
+    <title>Adeleke University | Reports</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body data-page="Reports">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">🎓</div>
+            <div class="sidebar-logo-text-group">
+                <span class="school-title">Adeleke University</span>
+                <span class="system-title">AttendQR System</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <p class="nav-section-title">Main Menu</p>
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="sessions.html" class="nav-item">
+                    <span class="nav-item-icon">📚</span>
+                    <span>Sessions</span>
+                </a>
+                <a href="reports.html" class="nav-item active">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Reports</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <p class="nav-section-title">Management</p>
+                <a href="students.html" class="nav-item">
+                    <span class="nav-item-icon">👨‍🎓</span>
+                    <span>Students</span>
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <span class="nav-item-icon">📖</span>
+                    <span>Courses</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="user-name">Loading...</p>
+                    <p class="user-role" id="user-role">Lecturer</p>
+                </div>
+                <button class="btn-icon" onclick="Auth.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="header-title">Attendance Reports</h1>
+            </div>
+
+            <div class="header-right">
+                <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
+                <div class="page-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="exportCSV()"><span>📥</span> Export CSV</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportPDF()"><span>📄</span> Export PDF</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="card" style="margin-bottom: var(--space-6);">
+                <div class="card-header">
+                    <h3 class="card-title">Filter Reports</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Course</label>
+                            <select class="form-select" id="filter-course">
+                                <option value="">All Courses</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Date Range</label>
+                            <select class="form-select" id="filter-date">
+                                <option value="">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="filter-status">
+                                <option value="">All Status</option>
+                                <option value="present">Present</option>
+                                <option value="late">Late</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end;">
+                            <button class="btn btn-primary w-full" onclick="applyFilters()"><span>🔍</span> Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid" id="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-icon blue">📊</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="total-records">0</p>
+                        <p class="stat-label">Total Records</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="present-count">0</p>
+                        <p class="stat-label">Present</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">⏰</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="late-count">0</p>
+                        <p class="stat-label">Late</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">📈</div>
+                    <div class="stat-content">
+                        <p class="stat-value" id="attendance-rate">0%</p>
+                        <p class="stat-label">Attendance Rate</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-bottom: var(--space-6);">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Attendance by Course</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 280px;">
+                            <canvas id="course-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Status Distribution</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 280px;">
+                            <canvas id="status-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">Detailed Attendance Records</h3>
+                        <p class="card-subtitle">Live Firestore attendance history</p>
+                    </div>
+                    <div class="search-bar" style="width: 250px;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="table-search" placeholder="Search records...">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="records-table-container">
+                        <div class="skeleton skeleton-table"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allRecords = [];
+        let filteredRecords = [];
+        let courseChart = null;
+        let statusChart = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await Page.requireAuth(['lecturer', 'admin']);
+            if (!user) return;
+
+            Page.fillUserCard(user);
+            bindSearch();
+            await loadReportData();
+        });
+
+        async function loadReportData() {
+            try {
+                const [records, courses] = await Promise.all([
+                    API.reports.getAttendanceRecords({ limit: 500 }),
+                    API.courses.list()
+                ]);
+
+                allRecords = records;
+                filteredRecords = [...allRecords];
+                populateCourseFilter(courses);
+                updateSummary();
+                renderCharts();
+                renderTable();
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                UI.toast(UI.getErrorMessage(error, 'Failed to load report data'), 'error', 6000);
+            }
+        }
+
+        function populateCourseFilter(courses) {
+            const select = document.getElementById('filter-course');
+            select.innerHTML = '<option value="">All Courses</option>' +
+                courses.map(course => `<option value="${course.code}">${course.code} - ${course.title}</option>`).join('');
+        }
+
+        function updateSummary() {
+            const total = filteredRecords.length;
+            const present = filteredRecords.filter(record => record.status === 'present').length;
+            const late = filteredRecords.filter(record => record.status === 'late').length;
+            const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+
+            document.getElementById('total-records').textContent = UI.formatNumber(total);
+            document.getElementById('present-count').textContent = UI.formatNumber(present);
+            document.getElementById('late-count').textContent = UI.formatNumber(late);
+            document.getElementById('attendance-rate').textContent = `${rate}%`;
+        }
+
+        function renderCharts() {
+            renderCourseChart();
+            renderStatusChart();
+        }
+
+        function renderCourseChart() {
+            const courseData = {};
+            filteredRecords.forEach(record => {
+                courseData[record.courseCode] = (courseData[record.courseCode] || 0) + 1;
+            });
+
+            if (courseChart) courseChart.destroy();
+
+            courseChart = new Chart(document.getElementById('course-chart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(courseData),
+                    datasets: [{
+                        label: 'Attendance Count',
+                        data: Object.values(courseData),
+                        backgroundColor: ['#0f766e', '#2563eb', '#f59e0b', '#ef4444', '#7c3aed'],
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderStatusChart() {
+            const present = filteredRecords.filter(record => record.status === 'present').length;
+            const late = filteredRecords.filter(record => record.status === 'late').length;
+
+            if (statusChart) statusChart.destroy();
+
+            statusChart = new Chart(document.getElementById('status-chart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Present', 'Late'],
+                    datasets: [{
+                        data: [present, late],
+                        backgroundColor: ['#059669', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%'
+                }
+            });
+        }
+
+        function renderTable() {
+            const container = document.getElementById('records-table-container');
+
+            if (!filteredRecords.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📈</div><p>No attendance records found</p></div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredRecords.map(record => `
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                                        <span>👤</span>
+                                        <div>
+                                            <p style="font-weight: 500;">${record.studentName}</p>
+                                            <p style="font-size: var(--text-xs); color: var(--text-muted);">${record.matricNo || '--'}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <p style="font-weight: 500;">${record.courseCode}</p>
+                                    <p style="font-size: var(--text-xs); color: var(--text-muted);">${record.courseTitle}</p>
+                                </td>
+                                <td>${UI.formatDate(record.timestamp)}</td>
+                                <td>${UI.formatTime(record.timestamp)}</td>
+                                <td><span class="badge badge-${record.status === 'present' ? 'success' : 'warning'}">${record.status === 'present' ? 'Present' : 'Late'}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function applyFilters() {
+            const course = document.getElementById('filter-course').value;
+            const dateRange = document.getElementById('filter-date').value;
+            const status = document.getElementById('filter-status').value;
+
+            filteredRecords = allRecords.filter(record => {
+                if (course && record.courseCode !== course) return false;
+                if (status && record.status !== status) return false;
+
+                if (dateRange) {
+                    const recordDate = new Date(record.timestamp);
+                    const now = new Date();
+                    if (dateRange === 'today' && recordDate.toDateString() !== now.toDateString()) return false;
+                    if (dateRange === 'week' && recordDate < new Date(now - 7 * 24 * 60 * 60 * 1000)) return false;
+                    if (dateRange === 'month' && recordDate < new Date(now - 30 * 24 * 60 * 60 * 1000)) return false;
+                }
+
+                return true;
+            });
+
+            updateSummary();
+            renderCharts();
+            renderTable();
+            UI.toast('Filters applied', 'success');
+        }
+
+        function bindSearch() {
+            document.getElementById('table-search').addEventListener('input', event => {
+                const query = event.target.value.trim().toLowerCase();
+                filteredRecords = query
+                    ? allRecords.filter(record => {
+                        const values = [
+                            record.studentName,
+                            record.matricNo,
+                            record.courseCode,
+                            record.courseTitle
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return values.includes(query);
+                    })
+                    : [...allRecords];
+
+                updateSummary();
+                renderCharts();
+                renderTable();
+            });
+        }
+
+        function exportCSV() {
+            ExportModule.toCSV(filteredRecords.map(record => ({
+                'Student Name': record.studentName,
+                'Matric Number': record.matricNo || '',
+                'Course Code': record.courseCode,
+                'Course Title': record.courseTitle,
+                Date: UI.formatDate(record.timestamp),
+                Time: UI.formatTime(record.timestamp),
+                Status: record.status
+            })), 'attendance-report');
+        }
+
+        function exportPDF() {
+            ExportModule.toPDF('Attendance Report');
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
