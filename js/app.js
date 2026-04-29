@@ -2024,9 +2024,9 @@ const API = {
             const db = Backend.getDb();
             const normalizedInput = String(scanCode || "").trim();
             const qrPayload = Utils.parseQrPayload(normalizedInput);
-            const normalizedCode = normalizedInput.startsWith("manual_")
-                ? normalizedInput.replace("manual_", "")
-                : qrPayload.qrToken;
+            const manualCodeCandidate = normalizedInput.replace(/^manual_/i, "").replace(/\D/g, "");
+            const isManualEntry = /^manual_/i.test(normalizedInput) || /^\d{6}$/.test(manualCodeCandidate);
+            const normalizedCode = isManualEntry ? manualCodeCandidate : qrPayload.qrToken;
             const encodedSessionId = qrPayload.sessionId || "";
 
             let snapshot = null;
@@ -2064,7 +2064,7 @@ const API = {
                 throw new Error("This session is no longer active.");
             }
 
-            if (session.qrExpiresAt && new Date(session.qrExpiresAt) < new Date() && !normalizedInput.startsWith("manual_")) {
+            if (session.qrExpiresAt && new Date(session.qrExpiresAt) < new Date() && !isManualEntry) {
                 throw new Error("QR code has expired. Please ask your lecturer to refresh it.");
             }
 
@@ -2143,9 +2143,11 @@ const API = {
                 throw new Error("Please sign in before scanning attendance.");
             }
 
+            const normalizedManualCode = String(attendanceData.manualCode || "").trim().replace(/\D/g, "");
+            const normalizedQrToken = String(attendanceData.qrToken || "").trim();
             const session = attendanceData.sessionId
                 ? await API.sessions.getById(attendanceData.sessionId)
-                : await API.sessions.resolveScanToken(attendanceData.qrToken || attendanceData.manualCode || "");
+                : await API.sessions.resolveScanToken(normalizedManualCode || normalizedQrToken || "");
 
             if (!session) {
                 throw new Error("That QR code or manual code is not valid.");
@@ -2189,8 +2191,8 @@ const API = {
                     venue: latestSession.venue,
                     status,
                     timestamp: scanTime,
-                    qrToken: attendanceData.qrToken || "",
-                    manualCodeUsed: attendanceData.manualCode || "",
+                    qrToken: normalizedQrToken,
+                    manualCodeUsed: normalizedManualCode,
                     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
                 });
 

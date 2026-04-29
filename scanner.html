@@ -195,16 +195,16 @@
                             <h3 class="student-panel-title">Enter lecturer code</h3>
                         </div>
                     </div>
-                    <div class="card-body" style="padding: 0;">
+                    <form class="card-body" id="manual-entry-form" style="padding: 0;">
                         <div class="form-group">
                             <label class="form-label" for="manual-code">Session Code</label>
-                            <input type="text" id="manual-code" class="form-input" placeholder="Enter the 6-digit code" maxlength="10">
+                            <input type="text" id="manual-code" class="form-input" placeholder="Enter the 6-digit code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}">
                         </div>
                         <div class="manual-entry-actions">
-                            <button class="btn btn-primary" onclick="submitManualCode()">Submit Attendance</button>
-                            <button class="btn btn-ghost" onclick="toggleManualEntry(false)">Cancel</button>
+                            <button class="btn btn-primary" type="submit">Submit Attendance</button>
+                            <button class="btn btn-ghost" type="button" onclick="toggleManualEntry(false)">Cancel</button>
                         </div>
-                    </div>
+                    </form>
                 </article>
             </div>
 
@@ -468,13 +468,17 @@
             try {
                 UI.toast('Processing attendance...', 'info');
 
-                const result = await API.attendance.mark({ qrToken });
+                const token = String(qrToken || '').trim();
+                const attendancePayload = /^\d{6}$/.test(token)
+                    ? { manualCode: token }
+                    : { qrToken: token };
+                const result = await API.attendance.mark(attendancePayload);
                 addRecentScan({
                     course: result.attendance.courseCode,
                     courseTitle: result.attendance.courseTitle,
                     time: new Date(),
                     status: result.attendance.status,
-                    token: qrToken
+                    token
                 });
 
                 await loadAttendanceHistory();
@@ -529,16 +533,26 @@
             const panel = document.getElementById('manual-entry-panel');
             const shouldShow = forceShow === null ? panel.classList.contains('hidden') : forceShow;
             panel.classList.toggle('hidden', !shouldShow);
+            document.getElementById('scan-result-panel').classList.toggle('hidden', shouldShow);
+
+            if (shouldShow) {
+                document.getElementById('manual-code').focus();
+            }
         }
 
         async function submitManualCode() {
-            const code = document.getElementById('manual-code').value.trim();
+            const code = document.getElementById('manual-code').value.replace(/\D/g, '').trim();
             if (!code) {
                 UI.toast('Please enter a session code', 'warning');
                 return;
             }
 
-            await processAttendance(`manual_${code}`);
+            if (code.length !== 6) {
+                UI.toast('Session codes must be 6 digits.', 'warning');
+                return;
+            }
+
+            await processAttendance(code);
             document.getElementById('manual-code').value = '';
             toggleManualEntry(false);
         }
@@ -636,6 +650,11 @@
             } finally {
                 UI.setButtonLoading(btn, false);
             }
+        });
+
+        document.getElementById('manual-entry-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitManualCode();
         });
     </script>
 </body>

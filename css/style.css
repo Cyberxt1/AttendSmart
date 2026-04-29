@@ -156,6 +156,10 @@ body {
     transition: background-color var(--transition-base), color var(--transition-base);
 }
 
+body.sidebar-open {
+    overflow: hidden;
+}
+
 a {
     color: var(--primary-color);
     text-decoration: none;
@@ -525,6 +529,16 @@ img {
     transition: width var(--transition-base);
 }
 
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.48);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+    z-index: 95;
+}
+
 .sidebar-header {
     display: flex;
     align-items: center;
@@ -619,6 +633,10 @@ img {
     border-top: 1px solid var(--border-color);
 }
 
+.mobile-sidebar-actions {
+    display: none;
+}
+
 .user-card {
     display: flex;
     align-items: center;
@@ -699,12 +717,14 @@ img {
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    margin-left: auto;
 }
 
 .page-actions {
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
 .main-content {
@@ -1491,20 +1511,48 @@ img {
     color: var(--text-primary);
 }
 
+.floating-sidebar-toggle {
+    display: none;
+    position: fixed;
+    right: var(--space-4);
+    bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: var(--shadow-xl);
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    z-index: 110;
+}
+
 /* ==========================================
    RESPONSIVE DESIGN
    ========================================== */
 @media (max-width: 1024px) {
     .sidebar {
+        width: min(320px, calc(100vw - 32px));
         transform: translateX(-100%);
+        transition: transform var(--transition-base);
     }
     
     .sidebar.open {
         transform: translateX(0);
     }
+
+    .sidebar-backdrop.open {
+        opacity: 1;
+        visibility: visible;
+    }
     
     .main-wrapper {
         margin-left: 0;
+    }
+
+    .main-header {
+        padding: 0 var(--space-4);
     }
     
     .mobile-menu-toggle {
@@ -1513,12 +1561,57 @@ img {
 }
 
 @media (max-width: 768px) {
-    :root {
-        --sidebar-width: 100%;
-    }
-    
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .main-header {
+        min-height: var(--header-height);
+        height: auto;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding-top: var(--space-3);
+        padding-bottom: var(--space-3);
+    }
+
+    .header-left,
+    .header-right {
+        width: 100%;
+    }
+
+    .header-left {
+        justify-content: space-between;
+    }
+
+    .header-title {
+        font-size: var(--text-lg);
+    }
+
+    .header-right {
+        justify-content: flex-end;
+    }
+
+    .header-right .page-actions {
+        display: none;
+    }
+
+    .mobile-menu-toggle {
+        display: none;
+    }
+
+    .mobile-sidebar-actions {
+        display: grid;
+        gap: var(--space-2);
+        padding: 0 var(--space-4) var(--space-4);
+    }
+
+    .nav-action-link {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .floating-sidebar-toggle {
+        display: inline-flex;
     }
     
     .school-name {
@@ -1593,8 +1686,10 @@ img {
    ========================================== */
 @media print {
     .sidebar,
+    .sidebar-backdrop,
     .main-header,
     .page-actions,
+    .floating-sidebar-toggle,
     .btn {
         display: none !important;
     }

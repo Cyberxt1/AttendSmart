@@ -595,6 +595,80 @@
             }], `${session.courseCode.toLowerCase()}-session-summary`);
         }
 
+        async function showQRCode(sessionId) {
+            const session = allSessions.find(item => item.id === sessionId);
+            if (!session) return;
+
+            let liveSession = await API.sessions.getById(sessionId);
+            if (!liveSession) return;
+
+            if (!liveSession.qrExpiresAt || new Date(liveSession.qrExpiresAt).getTime() <= Date.now()) {
+                await API.sessions.refreshQR(sessionId);
+                liveSession = await API.sessions.getById(sessionId);
+                if (!liveSession) return;
+            }
+
+            currentQRSession = liveSession;
+            allSessions = allSessions.map(item => item.id === liveSession.id ? liveSession : item);
+            document.getElementById('qr-course-title').textContent = liveSession.courseTitle;
+            document.getElementById('qr-course-code').textContent = `${liveSession.courseCode} • Manual code ${liveSession.manualCode || '------'}`;
+            generateQRCode(liveSession.qrPayload);
+            UI.toggleModal('qr-modal', true);
+
+            let timeLeft = Math.max(1, Math.ceil((new Date(liveSession.qrExpiresAt).getTime() - Date.now()) / 1000));
+            document.getElementById('qr-timer').textContent = `Refreshes in: ${timeLeft}s`;
+
+            if (qrRefreshInterval) clearInterval(qrRefreshInterval);
+
+            qrRefreshInterval = setInterval(async () => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    const result = await API.sessions.refreshQR(sessionId);
+                    if (result.success) {
+                        currentQRSession = await API.sessions.getById(sessionId);
+                        allSessions = allSessions.map(item => item.id === currentQRSession.id ? currentQRSession : item);
+                        generateQRCode(currentQRSession.qrPayload);
+                        timeLeft = Math.max(1, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000));
+                    }
+                }
+                document.getElementById('qr-timer').textContent = `Refreshes in: ${timeLeft}s`;
+            }, 1000);
+        }
+
+        function generateQRCode(payload) {
+            const container = document.getElementById('qr-code-display');
+            container.innerHTML = '';
+
+            if (!window.QRCode || typeof QRCode.toCanvas !== 'function') {
+                container.innerHTML = '<p style="color: red;">QR generator unavailable</p>';
+                UI.toast('QR generator could not be loaded.', 'error');
+                return;
+            }
+
+            QRCode.toCanvas(payload, {
+                width: 250,
+                height: 250,
+                margin: 2,
+                color: {
+                    dark: '#0f172a',
+                    light: '#ffffff'
+                }
+            }, function(error, canvas) {
+                if (error) {
+                    console.error('QR Code error:', error);
+                    container.innerHTML = '<p style="color: red;">Failed to generate QR code</p>';
+                    return;
+                }
+
+                if (canvas) {
+                    canvas.style.width = '100%';
+                    canvas.style.maxWidth = '250px';
+                    canvas.style.height = 'auto';
+                    container.appendChild(canvas);
+                }
+            });
+        }
+
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
         }
