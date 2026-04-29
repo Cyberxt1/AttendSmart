@@ -1534,6 +1534,9 @@ img {
 @media (max-width: 1024px) {
     .sidebar {
         width: min(320px, calc(100vw - 32px));
+        max-height: 100dvh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         transform: translateX(-100%);
         transition: transform var(--transition-base);
     }
@@ -1563,6 +1566,20 @@ img {
 @media (max-width: 768px) {
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .sidebar-nav {
+        flex: 0 0 auto;
+        overflow-y: visible;
+    }
+
+    .sidebar-footer {
+        margin-top: auto;
+        padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
     }
 
     .main-header {
