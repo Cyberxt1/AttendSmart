@@ -449,10 +449,16 @@
     border-radius: var(--radius-xl);
     margin-bottom: var(--space-5);
     box-shadow: var(--shadow-md);
+    width: min(100%, 290px);
+    min-height: 290px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .qr-code canvas {
     display: block;
+    margin: 0 auto;
 }
 
 .qr-info {
