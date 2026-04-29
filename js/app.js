@@ -560,13 +560,6 @@ const Auth = {
             };
         }
 
-        if (role === "admin" && !Utils.isSuperAdminEmail(email)) {
-            return {
-                success: false,
-                message: "Administrator self-registration is reserved for the superadmin email."
-            };
-        }
-
         const fullName = String(registrationData.fullName || "").trim()
             || (role === "student" ? email.split("@")[0] : "");
 
