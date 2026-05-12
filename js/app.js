@@ -1205,6 +1205,13 @@ const SearchFilter = {
 };
 
 const Page = {
+    privacyGuard: {
+        enabled: false,
+        visible: false,
+        node: null,
+        toastShown: false
+    },
+
     getRoute(page = "index.html") {
         return Utils.resolveFrontendPath(page);
     },
@@ -1253,6 +1260,108 @@ const Page = {
             darkModeToggle.dataset.bound = "true";
             darkModeToggle.addEventListener("click", () => DarkMode.toggle());
         }
+
+        this.bindScreenProtection();
+    },
+
+    bindScreenProtection() {
+        if (this.privacyGuard.enabled) return;
+        this.privacyGuard.enabled = true;
+
+        const activateGuard = (message, options = {}) => {
+            const shield = this.ensurePrivacyGuard();
+            const title = shield.querySelector("[data-privacy-title]");
+            const body = shield.querySelector("[data-privacy-message]");
+
+            if (title) {
+                title.textContent = options.title || "Protected View Hidden";
+            }
+
+            if (body) {
+                body.textContent = message || "Return to the active app window to continue.";
+            }
+
+            shield.classList.add("active");
+            document.body.classList.add("privacy-guard-active");
+            this.privacyGuard.visible = true;
+        };
+
+        const releaseGuard = () => {
+            if (!this.privacyGuard.node) return;
+            this.privacyGuard.node.classList.remove("active");
+            document.body.classList.remove("privacy-guard-active");
+            this.privacyGuard.visible = false;
+        };
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                activateGuard("Sensitive content is hidden while this tab is not visible.");
+            } else {
+                releaseGuard();
+            }
+        });
+
+        window.addEventListener("blur", () => {
+            activateGuard("Sensitive content is hidden while the app is out of focus.");
+        });
+
+        window.addEventListener("focus", () => {
+            if (document.visibilityState === "visible") {
+                releaseGuard();
+            }
+        });
+
+        window.addEventListener("beforeprint", () => {
+            activateGuard("Printing is disabled on this protected attendance system.", {
+                title: "Printing Blocked"
+            });
+        });
+
+        window.addEventListener("afterprint", () => {
+            if (document.visibilityState === "visible") {
+                releaseGuard();
+            }
+        });
+
+        window.addEventListener("keydown", event => {
+            if (event.key !== "PrintScreen") return;
+
+            activateGuard("Screen capture was detected. Sensitive content has been temporarily hidden.", {
+                title: "Capture Attempt Detected"
+            });
+
+            if (!this.privacyGuard.toastShown) {
+                UI.toast("Screenshot protection is active on this page.", "warning", 3000);
+                this.privacyGuard.toastShown = true;
+                setTimeout(() => {
+                    this.privacyGuard.toastShown = false;
+                }, 3200);
+            }
+
+            window.setTimeout(() => {
+                if (document.visibilityState === "visible" && document.hasFocus()) {
+                    releaseGuard();
+                }
+            }, 1200);
+        });
+    },
+
+    ensurePrivacyGuard() {
+        if (this.privacyGuard.node) return this.privacyGuard.node;
+
+        const shield = document.createElement("div");
+        shield.className = "privacy-guard";
+        shield.setAttribute("aria-hidden", "true");
+        shield.innerHTML = `
+            <div class="privacy-guard-card">
+                <h2 data-privacy-title>Protected View Hidden</h2>
+                <p data-privacy-message>Return to the active app window to continue.</p>
+            </div>
+        `;
+
+        document.body.appendChild(shield);
+        this.privacyGuard.node = shield;
+        return shield;
     },
 
     fillUserCard(user = Auth.getCurrentUser()) {
@@ -1604,6 +1713,12 @@ const API = {
             if (existingUser.isSuperAdmin && !admin.isSuperAdmin) {
                 throw new Error("Only the superadmin can change this account.");
             }
+            if (userId === admin.uid && status === "disabled") {
+                throw new Error("You cannot suspend your own account.");
+            }
+            if (existingUser.deletedAt) {
+                throw new Error("Archived accounts must be restored before changing status.");
+            }
 
             const normalizedStatus = status === "disabled" ? "disabled" : "active";
             await Backend.getDb().collection(COLLECTIONS.USERS).doc(userId).update({
@@ -1646,6 +1761,9 @@ const API = {
             if (existingUser.isSuperAdmin) {
                 throw new Error("The superadmin account cannot be archived.");
             }
+            if (userId === admin.uid) {
+                throw new Error("You cannot archive your own account.");
+            }
 
             const previousMatric = String(existingUser.matricNo || "").trim();
             const previousMatricRef = previousMatric
@@ -1677,6 +1795,68 @@ const API = {
             });
 
             return { success: true };
+        },
+
+        async restoreArchivedUser(userId) {
+            await App.ready();
+            App.assertConfigured();
+
+            const admin = Auth.getCurrentUser();
+            if (admin?.role !== "admin") {
+                throw new Error("Only administrators can restore archived users.");
+            }
+
+            const db = Backend.getDb();
+            const userRef = db.collection(COLLECTIONS.USERS).doc(userId);
+            const snapshot = await userRef.get();
+            if (!snapshot.exists) {
+                throw new Error("That user could not be found.");
+            }
+
+            const existingUser = this.mapUserDocument(snapshot);
+            if (existingUser.isSuperAdmin && !admin.isSuperAdmin) {
+                throw new Error("Only the superadmin can restore this account.");
+            }
+            if (!existingUser.deletedAt) {
+                throw new Error("This account is not archived.");
+            }
+
+            const matricNo = String(existingUser.matricNo || "").trim();
+            const matricRef = matricNo
+                ? db.collection(COLLECTIONS.MATRIC_INDEX).doc(matricNo.replace(/\//g, "-"))
+                : null;
+
+            await db.runTransaction(async transaction => {
+                if (matricRef) {
+                    const matricSnapshot = await transaction.get(matricRef);
+                    if (matricSnapshot.exists && matricSnapshot.data()?.uid !== userId) {
+                        throw new Error("Cannot restore this student because the matric number is already assigned to another account.");
+                    }
+
+                    transaction.set(matricRef, {
+                        matricNo,
+                        uid: userId,
+                        createdAt: matricSnapshot?.exists
+                            ? (matricSnapshot.data()?.createdAt || window.firebase.firestore.FieldValue.serverTimestamp())
+                            : window.firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                }
+
+                transaction.update(userRef, {
+                    accountStatus: "active",
+                    disabled: false,
+                    deletedAt: null,
+                    deletedBy: null,
+                    disabledAt: null,
+                    disabledBy: null,
+                    restoredAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                    restoredBy: admin.uid,
+                    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            return this.getById(userId);
         }
     },
 

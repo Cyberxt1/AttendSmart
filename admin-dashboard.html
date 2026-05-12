@@ -112,7 +112,7 @@
                             </div>
                         </div>
                         <div class="card-body" style="display: grid; gap: var(--space-4);">
-                            <div style="display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(2, minmax(140px, 0.8fr)); gap: var(--space-3);">
+                            <div class="admin-filter-grid">
                                 <div class="search-bar" style="width: 100%;">
                                     <span class="search-icon">🔍</span>
                                     <input type="text" class="search-input" id="user-search" placeholder="Search by name, email, or matric number">
@@ -155,16 +155,16 @@
                         <div class="card-header">
                             <h3 class="card-title">Professional Features</h3>
                         </div>
-                        <div class="card-body" style="display: grid; gap: var(--space-3);">
-                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                        <div class="card-body admin-feature-stack">
+                            <div class="admin-info-card">
                                 <p style="font-weight: 600;">Controlled Provisioning</p>
                                 <p style="color: var(--text-muted); margin-top: var(--space-2);">Create lecturer and student accounts without kicking the current admin out of session.</p>
                             </div>
-                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <div class="admin-info-card">
                                 <p style="font-weight: 600;">Access Suspension</p>
                                 <p style="color: var(--text-muted); margin-top: var(--space-2);">Disable accounts immediately when there is a credential, policy, or conduct issue.</p>
                             </div>
-                            <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <div class="admin-info-card">
                                 <p style="font-weight: 600;">Archive-Safe Deletion</p>
                                 <p style="color: var(--text-muted); margin-top: var(--space-2);">Archive old accounts while blocking future login and removing stale registration links.</p>
                             </div>
@@ -366,16 +366,16 @@
         function renderPolicyCard() {
             const container = document.getElementById('policy-card');
             container.innerHTML = `
-                <div style="display: grid; gap: var(--space-3);">
-                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                <div class="admin-feature-stack">
+                    <div class="admin-info-card">
                         <p style="font-weight: 600;">QR Rotation Window</p>
                         <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.qrRefreshIntervalSeconds} seconds</p>
                     </div>
-                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                    <div class="admin-info-card">
                         <p style="font-weight: 600;">Late Attendance Threshold</p>
                         <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.lateThresholdMinutes} minutes after session start</p>
                     </div>
-                    <div style="padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                    <div class="admin-info-card">
                         <p style="font-weight: 600;">Session Auto-Expiry</p>
                         <p style="color: var(--text-muted); margin-top: var(--space-2);">${systemSettings.sessionAutoExpiry ? 'Enabled' : 'Disabled'}</p>
                     </div>
@@ -417,7 +417,7 @@
             }
 
             container.innerHTML = `
-                <table class="table">
+                <table class="table users-table">
                     <thead>
                         <tr>
                             <th>User</th>
@@ -436,28 +436,28 @@
 
                             return `
                                 <tr>
-                                    <td>
-                                        <div style="display: flex; align-items: center; gap: var(--space-2);">
+                                    <td data-label="User">
+                                        <div class="user-summary">
                                             <span>${user.role === 'student' ? '🎓' : user.role === 'lecturer' ? '👩‍🏫' : '🛡️'}</span>
-                                            <div>
+                                            <div class="user-summary-copy">
                                                 <p style="font-weight: 600;">${user.fullName || user.name || 'User'}</p>
                                                 <p style="font-size: var(--text-xs); color: var(--text-muted);">${user.email || '--'}</p>
                                                 ${user.matricNo ? `<p style="font-size: var(--text-xs); color: var(--text-muted);">${user.matricNo}</p>` : ''}
                                             </div>
                                         </div>
                                     </td>
-                                    <td style="text-transform: capitalize;">${user.role}</td>
-                                    <td>${user.department || '--'}</td>
-                                    <td><span class="badge badge-${badgeType}" style="text-transform: capitalize;">${status}</span></td>
-                                    <td>${user.role === 'student' ? `${user.level || '--'} Level` : 'Managed account'}</td>
-                                    <td>
-                                        <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                                    <td data-label="Role" style="text-transform: capitalize;">${user.role}</td>
+                                    <td data-label="Department">${user.department || '--'}</td>
+                                    <td data-label="Status"><span class="badge badge-${badgeType}" style="text-transform: capitalize;">${status}</span></td>
+                                    <td data-label="Profile">${user.role === 'student' ? `${user.level || '--'} Level` : 'Managed account'}</td>
+                                    <td data-label="Actions">
+                                        <div class="user-actions">
                                             <button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="openEditModal('${user.uid}')">Edit</button>
                                             ${status === 'active'
                                                 ? `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="changeAccountStatus('${user.uid}', 'disabled')">Suspend</button>`
                                                 : status === 'disabled'
-                                                    ? `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="changeAccountStatus('${user.uid}', 'active')">Reactivate</button>`
-                                                    : `<button class="btn btn-secondary btn-sm" disabled>Archived</button>`}
+                                                    ? `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="changeAccountStatus('${user.uid}', 'active')">Unsuspend</button>`
+                                                    : `<button class="btn btn-secondary btn-sm" ${canModify ? '' : 'disabled'} onclick="restoreArchivedUser('${user.uid}')">Unarchive</button>`}
                                             <button class="btn btn-danger btn-sm" ${canModify && !user.deletedAt ? '' : 'disabled'} onclick="archiveUser('${user.uid}')">Archive</button>
                                         </div>
                                     </td>
@@ -562,12 +562,12 @@
         }
 
         async function changeAccountStatus(userId, status) {
-            const verb = status === 'disabled' ? 'suspend' : 'reactivate';
+            const verb = status === 'disabled' ? 'suspend' : 'unsuspend';
             if (!confirm(`Are you sure you want to ${verb} this account?`)) return;
 
             try {
                 await API.users.setAccountStatus(userId, status);
-                UI.toast(`Account ${status === 'disabled' ? 'suspended' : 'reactivated'} successfully`, 'success');
+                UI.toast(`Account ${status === 'disabled' ? 'suspended' : 'unsuspended'} successfully`, 'success');
                 await loadAdminData();
             } catch (error) {
                 UI.toast(error.message || 'Unable to change account status', 'error');
@@ -583,6 +583,18 @@
                 await loadAdminData();
             } catch (error) {
                 UI.toast(error.message || 'Unable to archive user', 'error');
+            }
+        }
+
+        async function restoreArchivedUser(userId) {
+            if (!confirm('Restore this archived user? Access will be re-enabled, but deleted course registrations will need to be recreated manually.')) return;
+
+            try {
+                await API.users.restoreArchivedUser(userId);
+                UI.toast('User restored successfully', 'success');
+                await loadAdminData();
+            } catch (error) {
+                UI.toast(error.message || 'Unable to restore user', 'error');
             }
         }
 

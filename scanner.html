@@ -150,21 +150,43 @@
                     </div>
 
                     <div class="scanner-shell">
-                        <div class="scanner-container hidden" id="scanner-container">
-                            <div class="scanner-frame">
-                                <div class="scanner-corner scanner-corner-tl"></div>
-                                <div class="scanner-corner scanner-corner-tr"></div>
-                                <div class="scanner-corner scanner-corner-bl"></div>
-                                <div class="scanner-corner scanner-corner-br"></div>
-                                <div class="scanner-line"></div>
+                        <div class="scanner-stage">
+                            <div class="scanner-container hidden" id="scanner-container">
+                                <div id="qr-reader">
+                                    <div class="scanner-frame">
+                                        <div class="scanner-focus">
+                                            <span class="scanner-focus-corner scanner-focus-corner-tl"></span>
+                                            <span class="scanner-focus-corner scanner-focus-corner-tr"></span>
+                                            <span class="scanner-focus-corner scanner-focus-corner-bl"></span>
+                                            <span class="scanner-focus-corner scanner-focus-corner-br"></span>
+                                            <span class="scanner-focus-label">Center QR here</span>
+                                            <div class="scanner-focus-beam"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="qr-reader"></div>
-                        </div>
 
                         <div class="scanner-empty-state" id="scanner-empty-state">
                             <div class="instruction-icon">📷</div>
-                            <h3>Ready when you are</h3>
-                            <p>Tap <strong>Attend Lecture</strong> to open your camera, then point it at the lecturer's live QR code.</p>
+                            <h3>Scan the live class code</h3>
+                            <p>Start the camera and hold the lecturer QR steady inside the center frame for automatic capture.</p>
+                        </div>
+
+                        </div>
+
+                        <div class="scanner-guide">
+                            <div class="scanner-guide-item">
+                                <span class="scanner-guide-dot"></span>
+                                <p>Use the back camera for a faster scan.</p>
+                            </div>
+                            <div class="scanner-guide-item">
+                                <span class="scanner-guide-dot"></span>
+                                <p>Keep the QR fully inside the center frame.</p>
+                            </div>
+                            <div class="scanner-guide-item">
+                                <span class="scanner-guide-dot"></span>
+                                <p>If the camera fails, enter the 6-digit lecturer code.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -242,6 +264,8 @@
     <script>
         let html5QrCode = null;
         let scannerActive = false;
+        let scannerStarting = false;
+        let scanProcessing = false;
         let selectedCameraId = null;
         let recentScans = [];
         let attendanceHistory = [];
@@ -391,7 +415,9 @@
                 return;
             }
 
-            if (scannerActive) return;
+            if (scannerActive || scannerStarting) return;
+            scannerStarting = true;
+            updateScannerUi();
 
             try {
                 const devices = await Html5Qrcode.getCameras();
@@ -400,35 +426,53 @@
                     return;
                 }
 
-                const backCamera = devices.find(device => device.label.toLowerCase().includes('back'));
+                const backCamera = devices.find(device => /back|rear|environment/i.test(device.label || ''));
                 selectedCameraId = backCamera ? backCamera.id : devices[0].id;
 
                 if (!html5QrCode) {
                     html5QrCode = new Html5Qrcode('qr-reader');
                 }
 
+                const qrBoxSize = getScannerBoxSize();
+                const scannerAspectRatio = getScannerAspectRatio();
+                const scannerConfig = {
+                    fps: 12,
+                    qrbox: { width: qrBoxSize, height: qrBoxSize },
+                    aspectRatio: scannerAspectRatio,
+                    disableFlip: false,
+                    rememberLastUsedCamera: true,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    }
+                };
+
+                if (window.Html5QrcodeSupportedFormats?.QR_CODE) {
+                    scannerConfig.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE];
+                }
+
                 await html5QrCode.start(
                     selectedCameraId,
-                    {
-                        fps: 10,
-                        qrbox: { width: 240, height: 240 },
-                        aspectRatio: 1
-                    },
+                    scannerConfig,
                     onScanSuccess,
                     onScanFailure
                 );
 
                 scannerActive = true;
+                await applyCameraFocusPreferences();
                 updateScannerUi();
             } catch (error) {
                 console.error('Scanner initialization error:', error);
                 showNoCameraError();
+            } finally {
+                scannerStarting = false;
+                updateScannerUi();
             }
         }
 
         async function stopScanner() {
             if (!html5QrCode || !scannerActive) {
                 scannerActive = false;
+                scannerStarting = false;
                 updateScannerUi();
                 return;
             }
@@ -440,29 +484,76 @@
             }
 
             scannerActive = false;
+            scannerStarting = false;
             updateScannerUi();
         }
 
         function updateScannerUi() {
             const profileLocked = Auth.needsStudentProfileCompletion();
-            document.getElementById('scanner-container').classList.toggle('hidden', !scannerActive);
-            document.getElementById('scanner-empty-state').classList.toggle('hidden', scannerActive);
+            const liveState = scannerActive || scannerStarting;
+            document.getElementById('scanner-container').classList.toggle('hidden', !liveState);
+            document.getElementById('scanner-empty-state').classList.toggle('hidden', liveState);
             document.getElementById('toolbar-stop-btn').classList.toggle('hidden', !scannerActive);
-            document.getElementById('toggle-attend-btn').textContent = scannerActive ? 'Camera Active' : 'Attend Lecture';
-            document.getElementById('toolbar-attend-btn').textContent = scannerActive ? 'Scanning...' : 'Start Camera';
-            document.getElementById('scanner-status-badge').textContent = scannerActive ? 'Camera live' : 'Camera idle';
-            document.getElementById('toggle-attend-btn').disabled = scannerActive || profileLocked;
-            document.getElementById('toolbar-attend-btn').disabled = scannerActive || profileLocked;
+            document.getElementById('toggle-attend-btn').textContent = scannerActive ? 'Camera Active' : (scannerStarting ? 'Starting Camera...' : 'Attend Lecture');
+            document.getElementById('toolbar-attend-btn').textContent = scannerActive ? 'Auto scanning...' : (scannerStarting ? 'Starting...' : 'Start Camera');
+            document.getElementById('scanner-status-badge').textContent = scannerActive ? 'Centered auto-detect on' : (scannerStarting ? 'Opening camera...' : 'Camera idle');
+            document.getElementById('toggle-attend-btn').disabled = scannerActive || scannerStarting || profileLocked;
+            document.getElementById('toolbar-attend-btn').disabled = scannerActive || scannerStarting || profileLocked;
         }
 
         async function onScanSuccess(decodedText) {
-            if (!scannerActive) return;
+            if (!scannerActive || scanProcessing) return;
 
+            scanProcessing = true;
             await stopScanner();
-            await processAttendance(decodedText);
+            try {
+                await processAttendance(decodedText);
+            } finally {
+                scanProcessing = false;
+            }
         }
 
         function onScanFailure() {}
+
+        function getScannerBoxSize() {
+            const scannerContainer = document.getElementById('scanner-container');
+            const containerWidth = scannerContainer?.clientWidth || window.innerWidth || 360;
+            const containerHeight = scannerContainer?.clientHeight || containerWidth;
+            const baseSize = Math.min(containerWidth, containerHeight);
+            const size = Math.round(Math.max(210, Math.min(280, baseSize - 96)));
+            return size;
+        }
+
+        function getScannerAspectRatio() {
+            const scannerContainer = document.getElementById('scanner-container');
+            const width = scannerContainer?.clientWidth || 1;
+            const height = scannerContainer?.clientHeight || width || 1;
+            const ratio = width / height;
+            return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+        }
+
+        async function applyCameraFocusPreferences() {
+            const video = document.querySelector('#qr-reader video');
+            const track = video?.srcObject?.getVideoTracks?.()[0];
+            if (!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') {
+                return;
+            }
+
+            const capabilities = track.getCapabilities();
+            const advanced = [];
+
+            if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+                advanced.push({ focusMode: 'continuous' });
+            }
+
+            if (advanced.length) {
+                try {
+                    await track.applyConstraints({ advanced });
+                } catch (error) {
+                    console.warn('Unable to apply camera focus preferences:', error);
+                }
+            }
+        }
 
         async function processAttendance(qrToken) {
             try {
@@ -624,6 +715,7 @@
                 }
             }
         });
+
 
         document.getElementById('student-profile-form').addEventListener('submit', async function(e) {
             e.preventDefault();
