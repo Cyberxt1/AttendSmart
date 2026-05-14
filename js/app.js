@@ -2316,6 +2316,10 @@ const API = {
                 throw new Error("Please sign in before scanning attendance.");
             }
 
+            if (student.role !== "student") {
+                throw new Error("Only students can mark attendance.");
+            }
+
             const normalizedManualCode = String(attendanceData.manualCode || "").trim().replace(/\D/g, "");
             const normalizedQrToken = String(attendanceData.qrToken || "").trim();
             const session = attendanceData.sessionId
@@ -2333,11 +2337,16 @@ const API = {
             const attendanceId = `${session.id}_${student.uid}`;
             const attendanceRef = Backend.getDb().collection(COLLECTIONS.ATTENDANCE).doc(attendanceId);
             const sessionRef = Backend.getDb().collection(COLLECTIONS.SESSIONS).doc(session.id);
+            const registrationCourseId = session.courseId || Utils.slugify(session.courseCode);
+            const registrationRef = Backend.getDb()
+                .collection(COLLECTIONS.COURSE_REGISTRATIONS)
+                .doc(`${registrationCourseId}_${student.uid}`);
 
             await Backend.getDb().runTransaction(async transaction => {
-                const [attendanceSnapshot, sessionSnapshot] = await Promise.all([
+                const [attendanceSnapshot, sessionSnapshot, registrationSnapshot] = await Promise.all([
                     transaction.get(attendanceRef),
-                    transaction.get(sessionRef)
+                    transaction.get(sessionRef),
+                    transaction.get(registrationRef)
                 ]);
 
                 if (attendanceSnapshot.exists) {
@@ -2351,6 +2360,10 @@ const API = {
 
                 if (new Date(latestSession.endTime) <= new Date()) {
                     throw new Error("This session has already expired.");
+                }
+
+                if (!registrationSnapshot.exists) {
+                    throw new Error("You cannot mark attendance for a course you are not registered for.");
                 }
 
                 transaction.set(attendanceRef, {
