@@ -1209,7 +1209,9 @@ const Page = {
         enabled: false,
         visible: false,
         node: null,
-        toastShown: false
+        toastShown: false,
+        watermarkNode: null,
+        watermarkTimer: null
     },
 
     getRoute(page = "index.html") {
@@ -1262,6 +1264,15 @@ const Page = {
         }
 
         this.bindScreenProtection();
+        this.bindWatermarkProtection();
+    },
+
+    isMobileChrome() {
+        const ua = navigator.userAgent || "";
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+        const isChrome = /Chrome|CriOS/i.test(ua);
+        const isExcluded = /EdgA|EdgiOS|OPR|OPiOS|SamsungBrowser/i.test(ua);
+        return isMobile && isChrome && !isExcluded;
     },
 
     bindScreenProtection() {
@@ -1344,6 +1355,30 @@ const Page = {
                 }
             }, 1200);
         });
+
+        document.addEventListener("contextmenu", event => {
+            if (!this.isMobileChrome()) return;
+            event.preventDefault();
+        });
+
+        document.addEventListener("dragstart", event => {
+            if (!this.isMobileChrome()) return;
+            event.preventDefault();
+        });
+
+        document.addEventListener("copy", event => {
+            if (!this.isMobileChrome()) return;
+            event.preventDefault();
+        });
+
+        document.addEventListener("cut", event => {
+            if (!this.isMobileChrome()) return;
+            event.preventDefault();
+        });
+
+        if (this.isMobileChrome()) {
+            document.body.classList.add("mobile-chrome-protected");
+        }
     },
 
     ensurePrivacyGuard() {
@@ -1362,6 +1397,49 @@ const Page = {
         document.body.appendChild(shield);
         this.privacyGuard.node = shield;
         return shield;
+    },
+
+    bindWatermarkProtection() {
+        const watermark = this.ensureSessionWatermark();
+        if (!watermark) return;
+
+        const refresh = () => this.updateSessionWatermark();
+        refresh();
+
+        if (this.privacyGuard.watermarkTimer) {
+            clearInterval(this.privacyGuard.watermarkTimer);
+        }
+
+        this.privacyGuard.watermarkTimer = window.setInterval(refresh, 30000);
+
+        if (this.isMobileChrome() && !watermark.dataset.noticeShown) {
+            watermark.dataset.noticeShown = "true";
+            window.setTimeout(() => {
+                UI.toast("Mobile browser protection is active. Screenshots cannot be fully blocked on the web.", "warning", 5000);
+            }, 900);
+        }
+    },
+
+    ensureSessionWatermark() {
+        if (this.privacyGuard.watermarkNode) return this.privacyGuard.watermarkNode;
+
+        const watermark = document.createElement("div");
+        watermark.className = "session-watermark";
+        watermark.setAttribute("aria-hidden", "true");
+        document.body.appendChild(watermark);
+        this.privacyGuard.watermarkNode = watermark;
+        return watermark;
+    },
+
+    updateSessionWatermark() {
+        const watermark = this.ensureSessionWatermark();
+        const user = Auth.getCurrentUser();
+        const name = user?.fullName || user?.name || user?.email || "Guest";
+        const identifier = user?.matricNo || user?.email || "anonymous";
+        const pageName = document.body.dataset.page || "Protected Page";
+        const timestamp = new Date().toLocaleString();
+
+        watermark.dataset.watermark = `${APP_CONFIG.SYSTEM_NAME} • ${pageName} • ${name} • ${identifier} • ${timestamp}`;
     },
 
     fillUserCard(user = Auth.getCurrentUser()) {
